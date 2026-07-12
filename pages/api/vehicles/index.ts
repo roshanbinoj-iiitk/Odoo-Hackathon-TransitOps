@@ -5,6 +5,9 @@ import { requireAuth } from '../../../lib/auth';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   return requireAuth(async (req, res, user) => {
     if (req.method === 'GET') {
+      if (!['FLEET_MANAGER', 'DISPATCHER', 'FINANCIAL_ANALYST'].includes(user.role)) {
+        return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
+      }
       try {
         const vehicles = await prisma.vehicle.findMany({
           orderBy: { createdAt: 'desc' }

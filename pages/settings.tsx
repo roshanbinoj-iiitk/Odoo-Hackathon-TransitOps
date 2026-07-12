@@ -1,7 +1,8 @@
 import React from "react";
 import Head from "next/head";
-import { Save } from "lucide-react";
+import { Save, Check, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -126,9 +127,52 @@ export default function Settings() {
                 <CardDescription>Manage what each role can view and edit.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center p-8 text-muted-foreground">
-                  Permissions Matrix component would render here.
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[200px]">ROLE</TableHead>
+                      <TableHead>FLEET</TableHead>
+                      <TableHead>DRIVERS</TableHead>
+                      <TableHead>TRIPS</TableHead>
+                      <TableHead>FUEL/EXP.</TableHead>
+                      <TableHead>ANALYTICS</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium">Fleet Manager</TableCell>
+                      <TableCell><Check className="h-4 w-4" /></TableCell>
+                      <TableCell><Check className="h-4 w-4" /></TableCell>
+                      <TableCell><Minus className="h-4 w-4" /></TableCell>
+                      <TableCell><Minus className="h-4 w-4" /></TableCell>
+                      <TableCell><Check className="h-4 w-4" /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Dispatcher</TableCell>
+                      <TableCell>View</TableCell>
+                      <TableCell><Minus className="h-4 w-4" /></TableCell>
+                      <TableCell><Check className="h-4 w-4" /></TableCell>
+                      <TableCell><Minus className="h-4 w-4" /></TableCell>
+                      <TableCell><Minus className="h-4 w-4" /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Safety Officer</TableCell>
+                      <TableCell><Minus className="h-4 w-4" /></TableCell>
+                      <TableCell><Check className="h-4 w-4" /></TableCell>
+                      <TableCell>View</TableCell>
+                      <TableCell><Minus className="h-4 w-4" /></TableCell>
+                      <TableCell><Minus className="h-4 w-4" /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Financial Analyst</TableCell>
+                      <TableCell>View</TableCell>
+                      <TableCell><Minus className="h-4 w-4" /></TableCell>
+                      <TableCell><Minus className="h-4 w-4" /></TableCell>
+                      <TableCell><Check className="h-4 w-4" /></TableCell>
+                      <TableCell><Check className="h-4 w-4" /></TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>

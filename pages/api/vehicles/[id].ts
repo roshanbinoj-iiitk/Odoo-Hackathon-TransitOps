@@ -11,6 +11,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'GET') {
+      if (!['FLEET_MANAGER', 'DISPATCHER', 'FINANCIAL_ANALYST'].includes(user.role)) {
+        return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
+      }
       try {
         const vehicle = await prisma.vehicle.findUnique({ where: { id } });
         if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });

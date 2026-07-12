@@ -7,7 +7,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method !== 'PATCH') {
       return res.status(405).json({ message: 'Method Not Allowed' });
     }
-    if (!['FLEET_MANAGER', 'DISPATCHER'].includes(user.role)) {
+    if (!['DISPATCHER'].includes(user.role)) {
       return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
     }
 
