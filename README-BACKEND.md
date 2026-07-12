@@ -30,7 +30,7 @@ This document outlines the backend implementation for the TransitOps application
 4. **Database Seeding**
    To replace mock data with real database entries, run the seed script:
    ```bash
-   npm run prisma seed
+   npx prisma db seed
    ```
    *Note: This will populate the database with default users (Admin, Driver, Safety Officer, Financial Analyst) and the mock data provided in `data/mock.ts` converted into PostgreSQL tables.*
 

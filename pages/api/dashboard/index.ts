@@ -27,7 +27,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         totalDistanceAgg,
         totalFuelAgg,
         totalFuelCostAgg,
-        totalMaintenanceCostAgg
+        totalMaintenanceCostAgg,
+        totalDrivers,
+        availableDrivers,
+        offDutyDrivers,
+        suspendedDrivers
       ] = await Promise.all([
         prisma.vehicle.count({ where: vehicleWhere }),
         prisma.vehicle.count({ where: { ...vehicleWhere, status: 'ON_TRIP' } }),
@@ -39,7 +43,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         prisma.trip.aggregate({ _sum: { distance: true }, where: { status: 'COMPLETED' } }),
         prisma.fuelLog.aggregate({ _sum: { gallons: true, cost: true } }),
         prisma.fuelLog.aggregate({ _sum: { cost: true } }),
-        prisma.maintenanceLog.aggregate({ _sum: { cost: true } })
+        prisma.maintenanceLog.aggregate({ _sum: { cost: true } }),
+        prisma.driver.count(),
+        prisma.driver.count({ where: { status: 'AVAILABLE' } }),
+        prisma.driver.count({ where: { status: 'OFF_DUTY' } }),
+        prisma.driver.count({ where: { status: 'SUSPENDED' } })
       ]);
 
       const totalDistance = totalDistanceAgg._sum.distance || 0;
@@ -54,7 +62,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         driversOnDuty,
         fleetUtilization: totalVehicles > 0 ? (activeVehicles / totalVehicles) * 100 : 0,
         fuelEfficiency: totalFuel > 0 ? totalDistance / totalFuel : 0,
-        operationalCost: (totalFuelCostAgg._sum.cost || 0) + (totalMaintenanceCostAgg._sum.cost || 0)
+        operationalCost: (totalFuelCostAgg._sum.cost || 0) + (totalMaintenanceCostAgg._sum.cost || 0),
+        totalDrivers,
+        availableDrivers,
+        offDutyDrivers,
+        suspendedDrivers
       };
 
       res.status(200).json(metrics);

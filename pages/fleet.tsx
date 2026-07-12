@@ -479,7 +479,7 @@ export default function Fleet() {
                 <Label htmlFor="type">Vehicle Type</Label>
                 <Select 
                   value={formData.type} 
-                  onValueChange={(val) => setFormData({...formData, type: val})}
+                  onValueChange={(val) => setFormData({...formData, type: val as string})}
                 >
                   <SelectTrigger id="type">
                     <SelectValue placeholder="Select type" />
@@ -566,7 +566,7 @@ export default function Fleet() {
                 <Label htmlFor="region">Region (State)</Label>
                 <Select 
                   value={formData.region} 
-                  onValueChange={(val) => setFormData({...formData, region: val})}
+                  onValueChange={(val) => setFormData({...formData, region: val as string})}
                 >
                   <SelectTrigger id="region">
                     <SelectValue placeholder="Select State" />

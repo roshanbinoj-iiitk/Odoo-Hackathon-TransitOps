@@ -53,7 +53,7 @@ async function main() {
     await prisma.user.upsert({
       where: { email: user.email },
       update: {},
-      create: user,
+      create: user as any,
     });
   }
   console.log('Users seeded');
@@ -104,27 +104,56 @@ async function main() {
   console.log(`Vehicles seeded: ${createdVehicles.length}`);
 
   // 3. Seed Drivers
-  const mappedDrivers = mockDrivers.map((d) => {
-    let status = 'AVAILABLE';
-    if (d.status === 'On Trip') status = 'ON_TRIP';
-    else if (d.status === 'Off Duty') status = 'OFF_DUTY';
-    else if (d.status === 'Suspended') status = 'SUSPENDED';
+  const indianFirstNames = ['Rahul', 'Arjun', 'Vivek', 'Ramesh', 'Suresh', 'Mohammed', 'Anand', 'Karthik', 'Ajay', 'Manoj', 'Aarav', 'Vihaan', 'Aditya', 'Sai', 'Krishna', 'Isha', 'Pooja', 'Priya', 'Sneha', 'Neha', 'Ravi', 'Amit', 'Sunil', 'Vijay', 'Sanjay', 'Vikram', 'Rajesh', 'Prakash', 'Ashok', 'Mahesh'];
+  const indianLastNames = ['Sharma', 'Nair', 'Kumar', 'Patel', 'Reddy', 'Irfan', 'Menon', 'Subramanian', 'Singh', 'Das', 'Gupta', 'Verma', 'Yadav', 'Joshi', 'Chauhan', 'Rao', 'Iyer', 'Pillai', 'Gowda', 'Desai'];
 
-    return {
-      name: d.name,
-      licenseNumber: d.licenseNumber,
-      licenseExpiry: new Date(d.licenseExpiry),
-      safetyScore: d.safetyScore,
-      experienceYears: d.experienceYears,
-      tripsCompleted: d.tripsCompleted,
-      status: status as any,
-      avatar: d.avatar || null,
-    };
-  });
+  function generateIndianLicense(stateCode: string) {
+    const rto = Math.floor(Math.random() * 90 + 1).toString().padStart(2, '0');
+    const year = Math.floor(Math.random() * 10 + 2010);
+    const id = Math.floor(Math.random() * 9000000 + 1000000);
+    return `${stateCode}${rto}${year}${id}`;
+  }
 
+  function generateIndianPhone() {
+    return `+91${[9, 8, 7, 6][Math.floor(Math.random() * 4)]}${Math.floor(Math.random() * 900000000 + 100000000)}`;
+  }
+
+  const driverStatuses = ['AVAILABLE', 'ON_TRIP', 'OFF_DUTY', 'SUSPENDED'];
   const createdDrivers = [];
-  for (const d of mappedDrivers) {
-    const drv = await prisma.driver.create({ data: d });
+
+  for (let i = 0; i < 40; i++) {
+    const name = `${indianFirstNames[Math.floor(Math.random() * indianFirstNames.length)]} ${indianLastNames[Math.floor(Math.random() * indianLastNames.length)]}`;
+    const stateIdx = Math.floor(Math.random() * indianStates.length);
+    const licenseNumber = generateIndianLicense(stateCodes[stateIdx]);
+    
+    // Create some expired licenses
+    const isExpired = i % 10 === 0; // 1 in 10 is expired
+    const licenseExpiry = isExpired 
+      ? new Date(Date.now() - 1000 * 60 * 60 * 24 * (Math.floor(Math.random() * 300) + 1)) 
+      : new Date(Date.now() + 1000 * 60 * 60 * 24 * (Math.floor(Math.random() * 1000) + 30));
+
+    const safetyScore = Number((Math.random() * 40 + 60).toFixed(1)); // 60 to 100
+    const experienceYears = Math.floor(Math.random() * 15) + 1;
+    const tripsCompleted = Math.floor(Math.random() * 500);
+    const status = driverStatuses[Math.floor(Math.random() * driverStatuses.length)];
+    const contactNumber = generateIndianPhone();
+    const licenseCategory = ['LMV', 'HMV', 'HGMV'][Math.floor(Math.random() * 3)];
+    
+    // Save contact and category in avatar field for UI
+    const avatar = JSON.stringify({ contact: contactNumber, category: licenseCategory });
+
+    const drv = await prisma.driver.create({ 
+      data: {
+        name,
+        licenseNumber,
+        licenseExpiry,
+        safetyScore,
+        experienceYears,
+        tripsCompleted,
+        status: status as any,
+        avatar
+      }
+    });
     createdDrivers.push(drv);
   }
   console.log('Drivers seeded');

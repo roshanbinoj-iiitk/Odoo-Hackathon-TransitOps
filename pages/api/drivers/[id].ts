@@ -3,7 +3,7 @@ import { prisma } from '../../../lib/prisma';
 import { requireAuth } from '../../../lib/auth';
 import { z } from 'zod';
 
-const createDriverSchema = z.object({
+const updateDriverSchema = z.object({
   name: z.string().min(1, 'Full Name is required'),
   licenseNumber: z.string().min(1, 'License Number is required'),
   licenseCategory: z.string().min(1, 'License Category is required'),
@@ -15,77 +15,79 @@ const createDriverSchema = z.object({
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   return requireAuth(async (req, res, user) => {
+    const { id } = req.query;
+    if (typeof id !== 'string') {
+      return res.status(400).json({ message: 'Invalid ID' });
+    }
+
     if (req.method === 'GET') {
       try {
-        const { search, status, sort, order } = req.query;
-        let whereClause: any = {};
-        
-        if (search) {
-          whereClause.OR = [
-            { name: { contains: String(search), mode: 'insensitive' } },
-            { licenseNumber: { contains: String(search), mode: 'insensitive' } },
-          ];
-        }
-        
-        if (status && status !== 'ALL') {
-          whereClause.status = status;
-        }
-
-        let orderByClause: any = { createdAt: 'desc' };
-        if (sort) {
-          const sortOrder = order === 'asc' ? 'asc' : 'desc';
-          if (sort === 'name') orderByClause = { name: sortOrder };
-          else if (sort === 'safetyScore') orderByClause = { safetyScore: sortOrder };
-          else if (sort === 'licenseExpiry') orderByClause = { licenseExpiry: sortOrder };
-          else if (sort === 'status') orderByClause = { status: sortOrder };
-          else if (sort === 'newest') orderByClause = { createdAt: 'desc' };
-          else if (sort === 'oldest') orderByClause = { createdAt: 'asc' };
-        }
-
-        const drivers = await prisma.driver.findMany({
-          where: whereClause,
-          orderBy: orderByClause
-        });
-        return res.status(200).json(drivers);
+        const driver = await prisma.driver.findUnique({ where: { id } });
+        if (!driver) return res.status(404).json({ message: 'Driver not found' });
+        return res.status(200).json(driver);
       } catch (error) {
         return res.status(500).json({ message: 'Internal server error' });
       }
-    } else if (req.method === 'POST') {
+    } else if (req.method === 'PUT') {
       try {
-        const validation = createDriverSchema.safeParse(req.body);
+        const validation = updateDriverSchema.safeParse(req.body);
         if (!validation.success) {
           return res.status(400).json({ message: validation.error.issues[0].message });
         }
-
         const data = validation.data;
 
-        const existing = await prisma.driver.findUnique({ where: { licenseNumber: data.licenseNumber } });
+        // Check if license number exists for another driver
+        const existing = await prisma.driver.findFirst({
+          where: {
+            licenseNumber: data.licenseNumber,
+            id: { not: id }
+          }
+        });
         if (existing) {
           return res.status(400).json({ message: 'License number already exists.' });
         }
 
-        const newDriver = await prisma.driver.create({
+        const updatedDriver = await prisma.driver.update({
+          where: { id },
           data: {
             name: data.name,
             licenseNumber: data.licenseNumber,
             licenseExpiry: new Date(data.licenseExpiry),
             safetyScore: data.safetyScore,
-            experienceYears: 0,
             status: data.status,
-            // storing contact and category in avatar field since we cannot modify schema
             avatar: JSON.stringify({ contact: data.contactNumber, category: data.licenseCategory })
           }
         });
-        
-        // parse it back before returning
-        return res.status(201).json({
-          ...newDriver,
+
+        return res.status(200).json({
+          ...updatedDriver,
           contactNumber: data.contactNumber,
           licenseCategory: data.licenseCategory,
           avatar: null
         });
       } catch (error) {
-        return res.status(500).json({ message: 'Failed to save driver.' });
+        return res.status(500).json({ message: 'Failed to update driver.' });
+      }
+    } else if (req.method === 'DELETE') {
+      try {
+        const driver = await prisma.driver.findUnique({
+          where: { id },
+          include: { trips: true }
+        });
+
+        if (!driver) {
+          return res.status(404).json({ message: 'Driver not found.' });
+        }
+
+        const hasActiveTrip = driver.trips.some(t => ['ASSIGNED', 'DISPATCHED'].includes(t.status));
+        if (hasActiveTrip) {
+          return res.status(400).json({ message: 'Driver is currently assigned to an active trip.' });
+        }
+
+        await prisma.driver.delete({ where: { id } });
+        return res.status(200).json({ message: 'Driver deleted successfully.' });
+      } catch (error) {
+        return res.status(500).json({ message: 'Internal server error' });
       }
     } else {
       res.status(405).json({ message: 'Method Not Allowed' });

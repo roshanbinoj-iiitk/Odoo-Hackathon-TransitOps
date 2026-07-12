@@ -40,7 +40,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (status === 'CANCELLED') {
         // If it was dispatched, restore statuses to AVAILABLE. If not, just cancel.
-        const tx = [ prisma.trip.update({ where: { id: tripId }, data: { status: 'CANCELLED' } }) ];
+        const tx: any[] = [ prisma.trip.update({ where: { id: tripId }, data: { status: 'CANCELLED' } }) ];
         if (trip.status === 'DISPATCHED') {
           tx.push(prisma.vehicle.update({ where: { id: trip.vehicleId }, data: { status: 'AVAILABLE' } }));
           tx.push(prisma.driver.update({ where: { id: trip.driverId }, data: { status: 'AVAILABLE' } }));
