@@ -13,7 +13,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { mockTrips, mockVehicles } from "@/data/mock";
+import useSWR from "swr";
+
+const fetcher = (url: string) => fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(res => res.json());
 import { 
   BarChart, 
   Bar, 
@@ -28,7 +30,10 @@ import {
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
-  const recentTrips = mockTrips.slice(0, 5);
+  const { data: dashboardData, error: dashError } = useSWR('/api/dashboard', fetcher);
+  const { data: tripsData, error: tripsError } = useSWR('/api/trips', fetcher);
+
+  const recentTrips = tripsData ? tripsData.slice(0, 5) : [];
   
   const revenueData = [
     { name: "Mon", total: 12400 },
@@ -68,7 +73,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {mockVehicles.filter(v => v.status === "Available" || v.status === "On Trip").length}
+                  {dashboardData?.activeVehicles + dashboardData?.availableVehicles || 0}
                 </div>
                 <p className="text-xs flex items-center mt-1 text-success">
                   <TrendingUp className="h-3 w-3 mr-1" />
@@ -86,7 +91,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {mockTrips.filter(t => t.status === "Dispatched").length}
+                  {dashboardData?.activeTrips || 0}
                 </div>
                 <p className="text-xs flex items-center mt-1 text-success">
                   <TrendingUp className="h-3 w-3 mr-1" />
@@ -104,7 +109,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {mockVehicles.filter(v => v.status === "Maintenance").length}
+                  {dashboardData?.maintenanceVehicles || 0}
                 </div>
                 <p className="text-xs flex items-center mt-1 text-destructive">
                   <AlertTriangle className="h-3 w-3 mr-1" />
@@ -228,7 +233,7 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentTrips.map((trip, idx) => (
+                  {recentTrips.map((trip: any) => (
                     <tr key={trip.id} className="border-b border-border hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3 font-medium">{trip.id}</td>
                       <td className="px-4 py-3">
@@ -237,21 +242,21 @@ export default function Dashboard() {
                           <span className="text-muted-foreground text-xs">to {trip.destination}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3">{trip.vehicleId}</td>
+                      <td className="px-4 py-3">{trip.vehicle?.registration || trip.vehicleId}</td>
                       <td className="px-4 py-3">
                         <Badge 
                           variant="secondary"
                           className={
-                            trip.status === "Completed" ? "bg-success/10 text-success" :
-                            trip.status === "Dispatched" ? "bg-info/10 text-info" :
-                            trip.status === "Assigned" ? "bg-warning/10 text-warning" :
+                            trip.status === "COMPLETED" ? "bg-success/10 text-success" :
+                            trip.status === "DISPATCHED" ? "bg-info/10 text-info" :
+                            trip.status === "ASSIGNED" ? "bg-warning/10 text-warning" :
                             "bg-muted text-muted-foreground"
                           }
                         >
                           {trip.status}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3">{trip.estimatedArrival}</td>
+                      <td className="px-4 py-3">{new Date(trip.estimatedArrival).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>

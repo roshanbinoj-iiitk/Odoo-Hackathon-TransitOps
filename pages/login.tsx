@@ -39,21 +39,33 @@ export default function Login() {
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsLoading(false);
     
-    if (data.email === "locked@transitops.com") {
-      toast.error("Account locked", {
-        description: "Your account has been locked due to too many failed attempts. Please contact support."
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: data.email, password: data.password, role: data.role })
       });
-      return;
+      
+      const result = await res.json();
+      
+      if (!res.ok) {
+        toast.error("Login failed", { description: result.message || "Invalid credentials" });
+        setIsLoading(false);
+        return;
+      }
+
+      localStorage.setItem('token', result.token);
+      localStorage.setItem('user', JSON.stringify(result.user));
+      
+      toast.success("Login successful", {
+        description: "Welcome back to TransitOps."
+      });
+      router.push("/dashboard");
+    } catch (error) {
+      toast.error("Error", { description: "Something went wrong" });
+      setIsLoading(false);
     }
-    
-    toast.success("Login successful", {
-      description: "Welcome back to TransitOps."
-    });
-    router.push("/dashboard");
   };
 
   return (

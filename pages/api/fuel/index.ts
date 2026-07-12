@@ -1,0 +1,42 @@
+import { NextApiRequest, NextApiResponse } from 'next';
+import { prisma } from '../../../lib/prisma';
+import { requireAuth } from '../../../lib/auth';
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  return requireAuth(async (req, res, user) => {
+    if (req.method === 'GET') {
+      try {
+        const logs = await prisma.fuelLog.findMany({
+          include: { vehicle: true },
+          orderBy: { createdAt: 'desc' }
+        });
+        return res.status(200).json(logs);
+      } catch (error) {
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+    } else if (req.method === 'POST') {
+      try {
+        const data = req.body;
+
+        const vehicle = await prisma.vehicle.findUnique({ where: { id: data.vehicleId } });
+        if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+
+        const newLog = await prisma.fuelLog.create({
+          data: {
+            vehicleId: data.vehicleId,
+            date: new Date(data.date),
+            gallons: Number(data.gallons),
+            cost: Number(data.cost),
+            location: data.location,
+          }
+        });
+
+        return res.status(201).json(newLog);
+      } catch (error) {
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+    } else {
+      res.status(405).json({ message: 'Method Not Allowed' });
+    }
+  })(req, res);
+}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Search, Bell, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,25 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
 export default function TopNav() {
+  const [user, setUser] = useState<{name: string; role: string} | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Failed to parse user from local storage");
+      }
+    }
+  }, []);
+
+  // Format initials
+  const initials = user?.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'U';
+
+  // Format role
+  const roleDisplay = user?.role ? user.role.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) : 'User';
+
   return (
     <header className="h-[72px] bg-card border-b border-border flex items-center justify-between px-4 md:px-8 shrink-0 sticky top-0 z-10">
       {/* Left section - Mobile Menu & Search */}
@@ -33,12 +52,12 @@ export default function TopNav() {
         
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex flex-col items-end">
-            <span className="text-sm font-medium">John Doe</span>
-            <Badge variant="secondary" className="text-[10px] h-4 px-1.5 rounded bg-primary/10 text-primary hover:bg-primary/20">Operations</Badge>
+            <span className="text-sm font-medium">{user?.name || 'Loading...'}</span>
+            <Badge variant="secondary" className="text-[10px] h-4 px-1.5 rounded bg-primary/10 text-primary hover:bg-primary/20">{roleDisplay}</Badge>
           </div>
           <Avatar className="w-9 h-9 border border-border">
             <AvatarImage src="" />
-            <AvatarFallback className="bg-primary/10 text-primary font-medium">JD</AvatarFallback>
+            <AvatarFallback className="bg-primary/10 text-primary font-medium">{initials}</AvatarFallback>
           </Avatar>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { 
@@ -10,7 +10,8 @@ import {
   Wrench, 
   Fuel, 
   BarChart3,
-  Map
+  Map,
+  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,27 @@ const navigation = [
 
 export default function Sidebar() {
   const router = useRouter();
+  const [user, setUser] = useState<{name: string; role: string} | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Failed to parse user from local storage");
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    router.push('/login');
+  };
+
+  const initials = user?.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'U';
+  const roleDisplay = user?.role ? user.role.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) : 'User';
 
   return (
     <div className="hidden md:flex flex-col w-[260px] bg-card border-r border-border">
@@ -67,16 +89,23 @@ export default function Sidebar() {
       </div>
 
       {/* User / Footer area */}
-      <div className="p-4 border-t border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center border border-border">
-            <span className="text-sm font-medium">JD</span>
+      <div className="p-4 border-t border-border flex justify-between items-center">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="w-10 h-10 shrink-0 rounded-full bg-muted flex items-center justify-center border border-border text-primary font-medium">
+            {initials}
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">John Doe</span>
-            <span className="text-xs text-muted-foreground">Admin</span>
+          <div className="flex flex-col overflow-hidden">
+            <span className="text-sm font-medium truncate">{user?.name || 'Loading...'}</span>
+            <span className="text-xs text-muted-foreground truncate">{roleDisplay}</span>
           </div>
         </div>
+        <button 
+          onClick={handleLogout}
+          className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+          title="Logout"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
