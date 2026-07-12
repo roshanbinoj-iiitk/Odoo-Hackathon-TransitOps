@@ -1,14 +1,25 @@
 import React from "react";
 import Head from "next/head";
-import { Wrench, CheckCircle2, Clock } from "lucide-react";
+import { Wrench, CheckCircle2, Clock, Check, ChevronsUpDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { mockMaintenanceLogs } from "@/data/mock";
 import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+import useSWR from "swr";
+
+const fetcher = (url: string) => fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(res => res.json());
 
 export default function Maintenance() {
+  const { data: vehiclesData } = useSWR('/api/vehicles', fetcher);
+  const vehicles = Array.isArray(vehiclesData) ? vehiclesData : [];
+  const [vehicleOpen, setVehicleOpen] = React.useState(false);
+  const [selectedVehicle, setSelectedVehicle] = React.useState<string>("");
+
   return (
     <>
       <Head>
@@ -30,8 +41,52 @@ export default function Maintenance() {
             </CardHeader>
             <div className="overflow-y-auto flex-1 p-6 space-y-6">
               <div className="space-y-2">
-                <Label>Vehicle ID</Label>
-                <Input placeholder="Search or select vehicle" />
+                <Label>Vehicle</Label>
+                <Popover open={vehicleOpen} onOpenChange={setVehicleOpen}>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={vehicleOpen}
+                        className={cn("w-full justify-between", !selectedVehicle && "text-muted-foreground")}
+                      />
+                    }
+                  >
+                    {selectedVehicle
+                      ? vehicles.find((v: any) => v.id === selectedVehicle)?.registration
+                      : "Search vehicle..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search by registration or type..." />
+                      <CommandList>
+                        <CommandEmpty>No vehicle found.</CommandEmpty>
+                        <CommandGroup>
+                          {vehicles.map((v: any) => (
+                            <CommandItem
+                              key={v.id}
+                              value={v.registration + " " + v.type}
+                              onSelect={() => {
+                                setSelectedVehicle(v.id);
+                                setVehicleOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedVehicle === v.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {v.registration} ({v.type})
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="space-y-2">
                 <Label>Service Type</Label>

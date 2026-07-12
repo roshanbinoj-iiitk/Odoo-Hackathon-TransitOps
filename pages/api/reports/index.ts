@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           id: vehicle.id,
           registration: vehicle.registration,
           totalDistance,
-          totalFuelGallons,
+          totalFuelLiters,
           fuelEfficiency,
           fuelCost,
           maintenanceCost,

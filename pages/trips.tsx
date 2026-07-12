@@ -12,7 +12,9 @@ import {
   MapPin,
   Package,
   Truck,
-  Users
+  Users,
+  Check,
+  ChevronsUpDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +27,14 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from "@/components/ui/command";
 import useSWR from "swr";
 const fetcher = (url: string) => fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(res => res.json());
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -51,6 +61,8 @@ export default function Trips() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState<{name: string; role: string} | null>(null);
   const [updatingTripId, setUpdatingTripId] = useState<string | null>(null);
+  const [vehicleOpen, setVehicleOpen] = useState(false);
+  const [driverOpen, setDriverOpen] = useState(false);
 
   React.useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -205,31 +217,101 @@ export default function Trips() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2 col-span-2 sm:col-span-1">
                       <Label>Assign Vehicle</Label>
-                      <Select onValueChange={(val) => val && form.setValue("vehicleId", val as string)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select vehicle" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {vehicles.filter((v: any) => v.status === "AVAILABLE").map((v: any) => (
-                            <SelectItem key={v.id} value={v.id}>{v.registration} ({v.type})</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Popover open={vehicleOpen} onOpenChange={setVehicleOpen}>
+                        <PopoverTrigger
+                          render={
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={vehicleOpen}
+                              className={cn("w-full justify-between", !form.watch("vehicleId") && "text-muted-foreground")}
+                            />
+                          }
+                        >
+                          {form.watch("vehicleId")
+                            ? vehicles.find((v: any) => v.id === form.watch("vehicleId"))?.registration
+                            : "Search vehicle..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search by registration or type..." />
+                            <CommandList>
+                              <CommandEmpty>No vehicle found.</CommandEmpty>
+                              <CommandGroup>
+                                {vehicles.filter((v: any) => v.status === "AVAILABLE").map((v: any) => (
+                                  <CommandItem
+                                    key={v.id}
+                                    value={v.registration + " " + v.type}
+                                    onSelect={() => {
+                                      form.setValue("vehicleId", v.id, { shouldValidate: true });
+                                      setVehicleOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        form.watch("vehicleId") === v.id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    {v.registration} ({v.type})
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       {form.formState.errors.vehicleId && <p className="text-sm text-destructive">{form.formState.errors.vehicleId.message}</p>}
                     </div>
                     
                     <div className="space-y-2 col-span-2 sm:col-span-1">
                       <Label>Assign Driver</Label>
-                      <Select onValueChange={(val) => val && form.setValue("driverId", val as string)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select driver" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {drivers.filter((d: any) => d.status === "AVAILABLE").map((d: any) => (
-                            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Popover open={driverOpen} onOpenChange={setDriverOpen}>
+                        <PopoverTrigger
+                          render={
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={driverOpen}
+                              className={cn("w-full justify-between", !form.watch("driverId") && "text-muted-foreground")}
+                            />
+                          }
+                        >
+                          {form.watch("driverId")
+                            ? drivers.find((d: any) => d.id === form.watch("driverId"))?.name
+                            : "Search driver..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search by name..." />
+                            <CommandList>
+                              <CommandEmpty>No driver found.</CommandEmpty>
+                              <CommandGroup>
+                                {drivers.filter((d: any) => d.status === "AVAILABLE").map((d: any) => (
+                                  <CommandItem
+                                    key={d.id}
+                                    value={d.name}
+                                    onSelect={() => {
+                                      form.setValue("driverId", d.id, { shouldValidate: true });
+                                      setDriverOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        form.watch("driverId") === d.id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    {d.name}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       {form.formState.errors.driverId && <p className="text-sm text-destructive">{form.formState.errors.driverId.message}</p>}
                     </div>
                   </div>
