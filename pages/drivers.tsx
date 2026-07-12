@@ -172,6 +172,7 @@ export default function Drivers() {
     exportToPDF({
       title: "Driver Directory",
       filename: "driver_directory.pdf",
+      orientation: "landscape",
       headers: ['Name', 'Contact', 'License No.', 'Category', 'Safety Score', 'Status'],
       data: drivers.map((d: any) => [
         d.name,
