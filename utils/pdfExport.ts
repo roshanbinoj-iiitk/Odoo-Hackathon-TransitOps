@@ -6,10 +6,11 @@ interface ExportToPDFOptions {
   filename: string;
   headers: string[];
   data: (string | number)[][];
+  orientation?: "portrait" | "landscape";
 }
 
-export const exportToPDF = ({ title, filename, headers, data }: ExportToPDFOptions) => {
-  const doc = new jsPDF();
+export const exportToPDF = ({ title, filename, headers, data, orientation = "portrait" }: ExportToPDFOptions) => {
+  const doc = new jsPDF({ orientation });
 
   // Add Company Logo / Brand Name
   doc.setFontSize(22);
@@ -29,11 +30,15 @@ export const exportToPDF = ({ title, filename, headers, data }: ExportToPDFOptio
   const dateStr = new Date().toLocaleString();
   doc.text(`Generated on: ${dateStr}`, 14, 38);
 
+  const sanitizedData = data.map(row => 
+    row.map(cell => typeof cell === 'string' ? cell.replace(/₹/g, 'Rs. ') : cell)
+  );
+
   // Add Table
   autoTable(doc, {
     startY: 45,
     head: [headers],
-    body: data,
+    body: sanitizedData,
     theme: 'grid',
     headStyles: {
       fillColor: [229, 75, 75], // primary color

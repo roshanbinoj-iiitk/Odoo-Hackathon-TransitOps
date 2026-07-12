@@ -81,6 +81,7 @@ export default function Analytics() {
     exportToPDF({
       title: "Analytics Report",
       filename: "analytics_report.pdf",
+      orientation: "landscape",
       headers: ['Vehicle', 'Total Distance', 'Fuel Efficiency', 'Fuel Cost', 'Maint. Cost', 'Op. Cost', 'Revenue', 'ROI'],
       data: reports.map((r: any) => [
         r.registration,
