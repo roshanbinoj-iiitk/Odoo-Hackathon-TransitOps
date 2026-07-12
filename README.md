@@ -53,6 +53,15 @@ npx prisma db seed
 ```
 *(This will populate the database with default users and mock data for vehicles, drivers, and trips).*
 
+### Default Credentials for Evaluator
+
+You can use the following default credentials to log in and test different roles:
+
+- **Fleet Manager**: `manager@transitops.in` / `password123`
+- **Dispatcher**: `dispatcher@transitops.in` / `password123`
+- **Safety Officer**: `safety@transitops.in` / `password123`
+- **Financial Analyst**: `finance@transitops.in` / `password123`
+
 ### 3. Start Development Server
 
 Run the development server:
