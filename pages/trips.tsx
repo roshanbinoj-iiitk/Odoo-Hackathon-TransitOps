@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const tripSchema = z.object({
   source: z.string().min(1, "Source is required"),
@@ -49,6 +50,7 @@ type TripFormValues = z.infer<typeof tripSchema>;
 export default function Trips() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState<{name: string; role: string} | null>(null);
+  const [updatingTripId, setUpdatingTripId] = useState<string | null>(null);
 
   React.useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -63,6 +65,7 @@ export default function Trips() {
   
   const form = useForm<TripFormValues>({
     resolver: zodResolver(tripSchema) as any,
+    mode: "onChange",
     defaultValues: {
       source: "",
       destination: "",
@@ -124,7 +127,36 @@ export default function Trips() {
     setIsSubmitting(false);
   };
 
+  const handleUpdateTripStatus = async (tripId: string, newStatus: 'COMPLETED' | 'CANCELLED') => {
+    setUpdatingTripId(tripId);
+    try {
+      const res = await fetch(`/api/trips/${tripId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        toast.error(`Failed to ${newStatus.toLowerCase()} trip`, { description: errorData.message || "Something went wrong" });
+      } else {
+        toast.success(`Trip ${newStatus === 'COMPLETED' ? 'Completed' : 'Cancelled'}`, {
+          description: `Trip has been successfully ${newStatus.toLowerCase()}.`
+        });
+        mutateTrips();
+      }
+    } catch (error) {
+      toast.error("Error", { description: "Failed to connect to the server" });
+    } finally {
+      setUpdatingTripId(null);
+    }
+  };
+
   const activeTrips = trips.filter((t: any) => t.status === "DISPATCHED" || t.status === "ASSIGNED" || t.status === "DRAFT").slice(0, 5);
+  const pastTrips = trips.filter((t: any) => t.status === "COMPLETED" || t.status === "CANCELLED").slice(0, 10);
 
   return (
     <>
@@ -249,7 +281,7 @@ export default function Trips() {
                 </form>
               </div>
               <div className="p-6 border-t border-border bg-muted/10">
-                <Button type="submit" form="trip-form" className="w-full" disabled={isSubmitting || !form.formState.isValid}>
+                <Button type="submit" form="trip-form" className="w-full" disabled={isSubmitting}>
                   {isSubmitting ? "Dispatching..." : "Create & Dispatch Trip"}
                 </Button>
               </div>
@@ -261,52 +293,127 @@ export default function Trips() {
             </Card>
           )}
 
-          {/* Right Panel - Live Dispatch Board */}
+          {/* Right Panel - Dispatch Board & History */}
           <Card className="flex flex-col h-full overflow-hidden border-border shadow-sm bg-muted/10">
             <CardHeader className="bg-muted/30 border-b border-border pb-4">
-              <CardTitle>Live Dispatch Board</CardTitle>
-              <CardDescription>Real-time tracking of active operations.</CardDescription>
+              <CardTitle>Dispatch Operations</CardTitle>
+              <CardDescription>Monitor active operations and past history.</CardDescription>
             </CardHeader>
-            <div className="overflow-y-auto flex-1 p-6 space-y-6">
-              {activeTrips.map((trip: any) => (
-                <div key={trip.id} className="bg-card p-4 rounded-xl border border-border shadow-sm relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-info"></div>
-                  
-                  <div className="flex justify-between items-start mb-4 pl-2">
-                    <div>
-                      <h4 className="font-semibold">{trip.id}</h4>
-                      <p className="text-xs text-muted-foreground">{trip.cargo}</p>
+            <div className="flex-1 p-6 overflow-hidden flex flex-col">
+              <Tabs defaultValue="active" className="h-full flex flex-col">
+                <TabsList className="grid w-full grid-cols-2 mb-4 shrink-0">
+                  <TabsTrigger value="active">Active Trips</TabsTrigger>
+                  <TabsTrigger value="history">History</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="active" className="flex-1 overflow-y-auto space-y-6 mt-0 pr-2">
+                  {activeTrips.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-8">No active trips.</div>
+                  ) : activeTrips.map((trip: any) => (
+                    <div key={trip.id} className="bg-card p-4 rounded-xl border border-border shadow-sm relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-info"></div>
+                      
+                      <div className="flex justify-between items-start mb-4 pl-2">
+                        <div>
+                          <h4 className="font-semibold">{trip.id}</h4>
+                          <p className="text-xs text-muted-foreground">{trip.cargo}</p>
+                        </div>
+                        <Badge variant="secondary" className="bg-info/10 text-info">
+                          {trip.status}
+                        </Badge>
+                      </div>
+                      
+                      <div className="pl-2 mb-6">
+                        <div className="relative pl-6 pb-4 border-l-2 border-muted">
+                          <div className="absolute w-3 h-3 bg-card border-2 border-primary rounded-full -left-[7px] top-1"></div>
+                          <p className="text-sm font-medium">{trip.source}</p>
+                          <p className="text-xs text-muted-foreground">Dep: {new Date(trip.scheduledDeparture).toLocaleDateString()}</p>
+                        </div>
+                        <div className="relative pl-6">
+                          <div className="absolute w-3 h-3 bg-muted border-2 border-muted-foreground rounded-full -left-[7px] top-1"></div>
+                          <p className="text-sm font-medium">{trip.destination}</p>
+                          <p className="text-xs text-muted-foreground">ETA: {new Date(trip.estimatedArrival).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between pl-2 pt-4 border-t border-border">
+                        <div className="flex items-center gap-2">
+                          <Truck className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-xs font-medium">{trip.vehicle?.registration || trip.vehicleId}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-xs font-medium">{trip.driver?.name || "Assigned Driver"}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-end gap-3 pt-4 pl-2 mt-4 border-t border-border">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUpdateTripStatus(trip.id, 'CANCELLED')}
+                          disabled={updatingTripId === trip.id}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20"
+                        >
+                          Cancel Trip
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleUpdateTripStatus(trip.id, 'COMPLETED')}
+                          disabled={updatingTripId === trip.id}
+                        >
+                          Complete Trip
+                        </Button>
+                      </div>
                     </div>
-                    <Badge variant="secondary" className="bg-info/10 text-info">
-                      {trip.status}
-                    </Badge>
-                  </div>
-                  
-                  <div className="pl-2 mb-6">
-                    <div className="relative pl-6 pb-4 border-l-2 border-muted">
-                      <div className="absolute w-3 h-3 bg-card border-2 border-primary rounded-full -left-[7px] top-1"></div>
-                      <p className="text-sm font-medium">{trip.source}</p>
-                      <p className="text-xs text-muted-foreground">Dep: {new Date(trip.scheduledDeparture).toLocaleDateString()}</p>
+                  ))}
+                </TabsContent>
+                
+                <TabsContent value="history" className="flex-1 overflow-y-auto space-y-6 mt-0 pr-2">
+                  {pastTrips.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-8">No past trips found.</div>
+                  ) : pastTrips.map((trip: any) => (
+                    <div key={trip.id} className="bg-card p-4 rounded-xl border border-border shadow-sm relative overflow-hidden">
+                      <div className={`absolute top-0 left-0 w-1 h-full ${trip.status === 'COMPLETED' ? 'bg-green-500' : 'bg-destructive'}`}></div>
+                      
+                      <div className="flex justify-between items-start mb-4 pl-2">
+                        <div>
+                          <h4 className="font-semibold">{trip.id}</h4>
+                          <p className="text-xs text-muted-foreground">{trip.cargo}</p>
+                        </div>
+                        <Badge variant="secondary" className={trip.status === 'COMPLETED' ? 'bg-green-500/10 text-green-500' : 'bg-destructive/10 text-destructive'}>
+                          {trip.status}
+                        </Badge>
+                      </div>
+                      
+                      <div className="pl-2 mb-6">
+                        <div className="relative pl-6 pb-4 border-l-2 border-muted">
+                          <div className="absolute w-3 h-3 bg-card border-2 border-primary rounded-full -left-[7px] top-1"></div>
+                          <p className="text-sm font-medium">{trip.source}</p>
+                          <p className="text-xs text-muted-foreground">Dep: {new Date(trip.scheduledDeparture).toLocaleDateString()}</p>
+                        </div>
+                        <div className="relative pl-6">
+                          <div className="absolute w-3 h-3 bg-muted border-2 border-muted-foreground rounded-full -left-[7px] top-1"></div>
+                          <p className="text-sm font-medium">{trip.destination}</p>
+                          <p className="text-xs text-muted-foreground">ETA: {new Date(trip.estimatedArrival).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between pl-2 pt-4 border-t border-border">
+                        <div className="flex items-center gap-2">
+                          <Truck className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-xs font-medium">{trip.vehicle?.registration || trip.vehicleId}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-xs font-medium">{trip.driver?.name || "Assigned Driver"}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="relative pl-6">
-                      <div className="absolute w-3 h-3 bg-muted border-2 border-muted-foreground rounded-full -left-[7px] top-1"></div>
-                      <p className="text-sm font-medium">{trip.destination}</p>
-                      <p className="text-xs text-muted-foreground">ETA: {new Date(trip.estimatedArrival).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between pl-2 pt-4 border-t border-border">
-                    <div className="flex items-center gap-2">
-                      <Truck className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-xs font-medium">{trip.vehicle?.registration || trip.vehicleId}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-xs font-medium">{trip.driver?.name || "Assigned Driver"}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  ))}
+                </TabsContent>
+              </Tabs>
             </div>
           </Card>
         </div>
