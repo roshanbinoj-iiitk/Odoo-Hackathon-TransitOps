@@ -1,0 +1,258 @@
+import React, { useState } from "react";
+import Head from "next/head";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { format } from "date-fns";
+import { 
+  CalendarIcon,
+  CheckCircle2,
+  Circle,
+  Clock,
+  MapPin,
+  Package,
+  Truck,
+  Users
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { mockVehicles, mockDrivers, mockTrips } from "@/data/mock";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
+
+const tripSchema = z.object({
+  source: z.string().min(1, "Source is required"),
+  destination: z.string().min(1, "Destination is required"),
+  vehicleId: z.string().min(1, "Vehicle is required"),
+  driverId: z.string().min(1, "Driver is required"),
+  cargo: z.string().min(1, "Cargo details are required"),
+  weight: z.coerce.number().positive("Weight must be positive"),
+  date: z.date({ message: "Schedule date is required" }),
+});
+
+type TripFormValues = z.infer<typeof tripSchema>;
+
+export default function Trips() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const form = useForm<TripFormValues>({
+    resolver: zodResolver(tripSchema) as any,
+    defaultValues: {
+      source: "",
+      destination: "",
+      vehicleId: "",
+      driverId: "",
+      cargo: "",
+      weight: 0,
+    }
+  });
+
+  const onSubmit = async (data: TripFormValues) => {
+    setIsSubmitting(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setIsSubmitting(false);
+    
+    toast.success("Trip Dispatched", {
+      description: `Successfully dispatched trip from ${data.source} to ${data.destination}.`
+    });
+    
+    form.reset();
+  };
+
+  const activeTrips = mockTrips.filter(t => t.status === "Dispatched" || t.status === "Assigned").slice(0, 5);
+
+  return (
+    <>
+      <Head>
+        <title>Trips & Dispatch | TransitOps</title>
+      </Head>
+      
+      <div className="space-y-6 h-[calc(100vh-140px)] flex flex-col">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Trips & Dispatch</h1>
+          <p className="text-muted-foreground">Create new trips and monitor active dispatch operations.</p>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6 flex-1 min-h-0">
+          {/* Left Panel - Creation Form */}
+          <Card className="flex flex-col h-full overflow-hidden border-border shadow-sm">
+            <CardHeader className="bg-muted/30 border-b border-border pb-4">
+              <CardTitle>Create New Trip</CardTitle>
+              <CardDescription>Enter trip details to assign a vehicle and driver.</CardDescription>
+            </CardHeader>
+            <div className="overflow-y-auto flex-1 p-6">
+              <form id="trip-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 col-span-2 sm:col-span-1">
+                    <Label>Source Origin</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input placeholder="e.g. Warehouse A" className="pl-9" {...form.register("source")} />
+                    </div>
+                    {form.formState.errors.source && <p className="text-sm text-destructive">{form.formState.errors.source.message}</p>}
+                  </div>
+                  
+                  <div className="space-y-2 col-span-2 sm:col-span-1">
+                    <Label>Destination</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input placeholder="e.g. Distribution Center B" className="pl-9" {...form.register("destination")} />
+                    </div>
+                    {form.formState.errors.destination && <p className="text-sm text-destructive">{form.formState.errors.destination.message}</p>}
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 col-span-2 sm:col-span-1">
+                    <Label>Assign Vehicle</Label>
+                    <Select onValueChange={(val) => val && form.setValue("vehicleId", val as string)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select vehicle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mockVehicles.filter(v => v.status === "Available").map(v => (
+                          <SelectItem key={v.id} value={v.id}>{v.registration} ({v.type})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {form.formState.errors.vehicleId && <p className="text-sm text-destructive">{form.formState.errors.vehicleId.message}</p>}
+                  </div>
+                  
+                  <div className="space-y-2 col-span-2 sm:col-span-1">
+                    <Label>Assign Driver</Label>
+                    <Select onValueChange={(val) => val && form.setValue("driverId", val as string)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select driver" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mockDrivers.filter(d => d.status === "Available").map(d => (
+                          <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {form.formState.errors.driverId && <p className="text-sm text-destructive">{form.formState.errors.driverId.message}</p>}
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 col-span-2">
+                    <Label>Cargo Details</Label>
+                    <div className="relative">
+                      <Package className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input placeholder="Description of goods" className="pl-9" {...form.register("cargo")} />
+                    </div>
+                    {form.formState.errors.cargo && <p className="text-sm text-destructive">{form.formState.errors.cargo.message}</p>}
+                  </div>
+
+                  <div className="space-y-2 col-span-2 sm:col-span-1">
+                    <Label>Weight (lbs)</Label>
+                    <Input type="number" placeholder="40000" {...form.register("weight")} />
+                    {form.formState.errors.weight && <p className="text-sm text-destructive">{form.formState.errors.weight.message}</p>}
+                  </div>
+
+                  <div className="space-y-2 col-span-2 sm:col-span-1">
+                    <Label>Schedule Date</Label>
+                    <Popover>
+                      <PopoverTrigger render={
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !form.watch("date") && "text-muted-foreground"
+                          )}
+                        />
+                      }>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {form.watch("date") ? format(form.watch("date"), "PPP") : <span>Pick a date</span>}
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={form.watch("date")}
+                          onSelect={(date) => date && form.setValue("date", date)}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {form.formState.errors.date && <p className="text-sm text-destructive">{form.formState.errors.date.message}</p>}
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div className="p-6 border-t border-border bg-muted/10">
+              <Button type="submit" form="trip-form" className="w-full" disabled={isSubmitting || !form.formState.isValid}>
+                {isSubmitting ? "Dispatching..." : "Create & Dispatch Trip"}
+              </Button>
+            </div>
+          </Card>
+
+          {/* Right Panel - Live Dispatch Board */}
+          <Card className="flex flex-col h-full overflow-hidden border-border shadow-sm bg-muted/10">
+            <CardHeader className="bg-muted/30 border-b border-border pb-4">
+              <CardTitle>Live Dispatch Board</CardTitle>
+              <CardDescription>Real-time tracking of active operations.</CardDescription>
+            </CardHeader>
+            <div className="overflow-y-auto flex-1 p-6 space-y-6">
+              {activeTrips.map((trip) => (
+                <div key={trip.id} className="bg-card p-4 rounded-xl border border-border shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-info"></div>
+                  
+                  <div className="flex justify-between items-start mb-4 pl-2">
+                    <div>
+                      <h4 className="font-semibold">{trip.id}</h4>
+                      <p className="text-xs text-muted-foreground">{trip.cargo}</p>
+                    </div>
+                    <Badge variant="secondary" className="bg-info/10 text-info">
+                      {trip.status}
+                    </Badge>
+                  </div>
+                  
+                  <div className="pl-2 mb-6">
+                    <div className="relative pl-6 pb-4 border-l-2 border-muted">
+                      <div className="absolute w-3 h-3 bg-card border-2 border-primary rounded-full -left-[7px] top-1"></div>
+                      <p className="text-sm font-medium">{trip.source}</p>
+                      <p className="text-xs text-muted-foreground">Dep: {trip.scheduledDeparture}</p>
+                    </div>
+                    <div className="relative pl-6">
+                      <div className="absolute w-3 h-3 bg-muted border-2 border-muted-foreground rounded-full -left-[7px] top-1"></div>
+                      <p className="text-sm font-medium">{trip.destination}</p>
+                      <p className="text-xs text-muted-foreground">ETA: {trip.estimatedArrival}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pl-2 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2">
+                      <Truck className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs font-medium">{trip.vehicleId}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs font-medium">Assigned Driver</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
+    </>
+  );
+}
