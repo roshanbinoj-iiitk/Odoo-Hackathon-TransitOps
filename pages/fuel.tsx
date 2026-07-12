@@ -1,95 +1,123 @@
-import React from "react";
+import React, { useState } from "react";
 import Head from "next/head";
-import { 
-  Fuel, 
-  IndianRupee, 
-  Wrench, 
-  TrendingDown, 
-  TrendingUp,
-  Download
-} from "lucide-react";
+import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
-import useSWR from "swr";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import useSWR, { mutate } from "swr";
+
 const fetcher = (url: string) => fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(res => res.json());
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell
-} from "recharts";
-
-const monthlyCosts = [
-  { name: "Jan", fuel: 4000, maintenance: 2400, other: 2400 },
-  { name: "Feb", fuel: 3000, maintenance: 1398, other: 2210 },
-  { name: "Mar", fuel: 2000, maintenance: 9800, other: 2290 },
-  { name: "Apr", fuel: 2780, maintenance: 3908, other: 2000 },
-  { name: "May", fuel: 1890, maintenance: 4800, other: 2181 },
-  { name: "Jun", fuel: 2390, maintenance: 3800, other: 2500 },
-];
-
-const expenseBreakdown = [
-  { name: "Fuel", value: 45 },
-  { name: "Maintenance", value: 30 },
-  { name: "Tolls & Routes", value: 15 },
-  { name: "Driver Expenses", value: 10 },
-];
-
-const COLORS = ['var(--primary)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)'];
 
 export default function FuelExpenses() {
   const { data: fuelLogsData } = useSWR('/api/fuel', fetcher);
+  const { data: expensesData } = useSWR('/api/expenses', fetcher);
+  const { data: maintenanceData } = useSWR('/api/maintenance', fetcher);
+  const { data: vehiclesData } = useSWR('/api/vehicles', fetcher);
+  const { data: tripsData } = useSWR('/api/trips', fetcher);
+
   const fuelLogs = Array.isArray(fuelLogsData) ? fuelLogsData : [];
+  const expenses = Array.isArray(expensesData) ? expensesData : [];
+  const maintenanceLogs = Array.isArray(maintenanceData) ? maintenanceData : [];
+  const vehicles = Array.isArray(vehiclesData) ? vehiclesData : [];
+  const trips = Array.isArray(tripsData) ? tripsData : [];
 
-  const totalFuelCost = fuelLogs.reduce((acc: number, log: any) => acc + (log.cost || 0), 0);
-  const totalLiters = fuelLogs.reduce((acc: number, log: any) => acc + (log.liters || 0), 0);
+  const [fuelForm, setFuelForm] = useState({ vehicleId: '', date: '', liters: '', cost: '', location: '' });
+  const [expenseForm, setExpenseForm] = useState({ tripId: '', vehicleId: '', type: '', amount: '', date: '', notes: '' });
+  
+  const [fuelOpen, setFuelOpen] = useState(false);
+  const [expenseOpen, setExpenseOpen] = useState(false);
 
-  const exportCSV = () => {
-    const csvContent = "data:text/csv;charset=utf-8," + 
-      "Date,Vehicle,Location,Liters,Cost\n" +
-      fuelLogs.map((log: any) => 
-        `${new Date(log.date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })},${log.vehicle?.registration || log.vehicleId},"${log.location}",${log.liters},${log.cost}`
-      ).join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "fuel_expenses_report.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const [fuelPage, setFuelPage] = useState(1);
+  const [expensePage, setExpensePage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  const handleFuelSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/fuel', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(fuelForm)
+      });
+      if (res.ok) {
+        mutate('/api/fuel');
+        setFuelOpen(false);
+        setFuelForm({ vehicleId: '', date: '', liters: '', cost: '', location: '' });
+      } else {
+        const errorData = await res.json();
+        alert(errorData.message || 'Failed to log fuel');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while logging fuel');
+    }
   };
 
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.text("Fuel & Expenses Report", 14, 15);
-    autoTable(doc, {
-      head: [['Date', 'Vehicle', 'Location', 'Liters', 'Cost (INR)']],
-      body: fuelLogs.map((log: any) => [
-        new Date(log.date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' }),
-        log.vehicle?.registration || log.vehicleId,
-        log.location,
-        String(log.liters),
-        String(log.cost)
-      ]),
-    });
-    doc.save('fuel_expenses_report.pdf');
+  const handleExpenseSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      // Create a payload, omitting empty tripId/vehicleId to avoid foreign key issues
+      const payload: Record<string, string> = { ...expenseForm };
+      if (!payload.tripId) delete payload.tripId;
+      if (!payload.vehicleId) delete payload.vehicleId;
+      
+      const res = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        mutate('/api/expenses');
+        setExpenseOpen(false);
+        setExpenseForm({ tripId: '', vehicleId: '', type: '', amount: '', date: '', notes: '' });
+      } else {
+        const errorData = await res.json();
+        alert(errorData.message || 'Failed to add expense');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while adding expense');
+    }
   };
+
+  const totalFuelCost = fuelLogs.reduce((acc: number, log: { cost?: number }) => acc + (log.cost || 0), 0);
+  const totalMaintCost = maintenanceLogs.reduce((acc: number, log: { cost?: number }) => acc + (log.cost || 0), 0) +
+                         expenses.filter((e: { type: string }) => e.type === 'MAINTENANCE' || e.type === 'REPAIR').reduce((acc: number, e: { amount: number }) => acc + e.amount, 0);
+
+  const totalOpCost = totalFuelCost + totalMaintCost;
+
+  // Group expenses by Trip
+  const tripExpensesMap = expenses.reduce((acc: Record<string, { tripId: string, tripName: string, vehicle: string, toll: number, other: number, maint: number, status: string }>, exp: { tripId?: string, trip?: { id: string, status: string }, vehicle?: { registration: string }, type: string, amount: number }) => {
+    if (!exp.tripId) return acc;
+    const tripId = exp.tripId;
+    if (!acc[tripId]) {
+      acc[tripId] = {
+        tripId,
+        tripName: exp.trip ? `TR${exp.trip.id.substring(exp.trip.id.length - 4).toUpperCase()}` : 'Unlinked',
+        vehicle: exp.vehicle ? exp.vehicle.registration : '-',
+        toll: 0,
+        other: 0,
+        maint: 0,
+        status: exp.trip ? exp.trip.status : '-'
+      };
+    }
+    if (exp.type === 'TOLL') acc[tripId].toll += exp.amount;
+    else if (exp.type === 'MAINTENANCE' || exp.type === 'REPAIR') acc[tripId].maint += exp.amount;
+    else acc[tripId].other += exp.amount;
+    return acc;
+  }, {});
+
+  const tripExpenses = Object.values(tripExpensesMap);
 
   return (
     <>
@@ -103,161 +131,273 @@ export default function FuelExpenses() {
             <h1 className="text-3xl font-bold tracking-tight">Fuel & Expenses</h1>
             <p className="text-muted-foreground">Financial overview of fleet operations.</p>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger className={buttonVariants({ variant: "outline" })}>
-              <Download className="mr-2 h-4 w-4" /> Export Report
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={exportCSV}>Download CSV</DropdownMenuItem>
-              <DropdownMenuItem onClick={exportPDF}>Download PDF</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Fuel Cost</CardTitle>
-              <Fuel className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹{totalFuelCost.toLocaleString()}</div>
-              <p className="text-xs flex items-center mt-1 text-destructive">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                +4.5% vs last month
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Fuel Consumption</CardTitle>
-              <Fuel className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalLiters.toLocaleString()} L</div>
-              <p className="text-xs flex items-center mt-1 text-success">
-                <TrendingDown className="h-3 w-3 mr-1" />
-                -2.1% efficiency improved
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Maintenance Costs</CardTitle>
-              <Wrench className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹34,250</div>
-              <p className="text-xs flex items-center mt-1 text-success">
-                <TrendingDown className="h-3 w-3 mr-1" />
-                -12% vs last month
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Cost per Km</CardTitle>
-              <IndianRupee className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹1.84</div>
-              <p className="text-xs flex items-center mt-1 text-destructive">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                +₹0.12 vs avg
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="col-span-1 lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Operating Costs Trend</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={monthlyCosts}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
-                    <Tooltip cursor={{ stroke: 'var(--border)' }} contentStyle={{ borderRadius: '10px' }} />
-                    <Area type="monotone" dataKey="fuel" stackId="1" stroke="var(--primary)" fill="var(--primary)" fillOpacity={0.8} />
-                    <Area type="monotone" dataKey="maintenance" stackId="1" stroke="var(--chart-2)" fill="var(--chart-2)" fillOpacity={0.8} />
-                    <Area type="monotone" dataKey="other" stackId="1" stroke="var(--chart-3)" fill="var(--chart-3)" fillOpacity={0.8} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="col-span-1">
-            <CardHeader>
-              <CardTitle>Expense Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center">
-              <div className="h-[250px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={expenseBreakdown}
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {expenseBreakdown.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={{ borderRadius: '10px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="grid grid-cols-2 gap-4 w-full mt-4">
-                {expenseBreakdown.map((item, i) => (
-                  <div key={item.name} className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i] }} />
-                    <span className="text-sm font-medium">{item.name} ({item.value}%)</span>
+          <div className="flex gap-2">
+            
+            <Dialog open={fuelOpen} onOpenChange={setFuelOpen}>
+              <DialogTrigger render={<Button variant="default" />}>
+                <Plus className="mr-2 h-4 w-4" /> Log Fuel
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Log Fuel</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleFuelSubmit} className="space-y-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="vehicleId">Vehicle</Label>
+                    <Select value={fuelForm.vehicleId} onValueChange={(val) => setFuelForm({ ...fuelForm, vehicleId: val })} required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select vehicle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {vehicles.map((v: { id: string, registration: string }) => (
+                          <SelectItem key={v.id} value={v.id}>{v.registration}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="grid gap-2">
+                    <Label htmlFor="date">Date</Label>
+                    <Input id="date" type="datetime-local" value={fuelForm.date} onChange={e => setFuelForm({...fuelForm, date: e.target.value})} required />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="liters">Liters</Label>
+                      <Input id="liters" type="number" min="0" step="0.1" value={fuelForm.liters} onChange={e => setFuelForm({...fuelForm, liters: e.target.value})} required />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="cost">Total Cost (₹)</Label>
+                      <Input id="cost" type="number" min="0" step="1" value={fuelForm.cost} onChange={e => setFuelForm({...fuelForm, cost: e.target.value})} required />
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="location">Location</Label>
+                    <Input id="location" value={fuelForm.location} onChange={e => setFuelForm({...fuelForm, location: e.target.value})} required />
+                  </div>
+                  <DialogFooter>
+                    <DialogClose render={<Button variant="outline" type="button" />}>
+                      Cancel
+                    </DialogClose>
+                    <Button type="submit">Save Log</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={expenseOpen} onOpenChange={setExpenseOpen}>
+              <DialogTrigger render={<Button variant="outline" />}>
+                <Plus className="mr-2 h-4 w-4" /> Add Expense
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add Expense</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleExpenseSubmit} className="space-y-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="tripId">Trip (Optional)</Label>
+                    <Select value={expenseForm.tripId} onValueChange={(val) => setExpenseForm({ ...expenseForm, tripId: val === 'none' ? '' : val })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select trip" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {trips.map((t: { id: string, source: string, destination: string }) => (
+                          <SelectItem key={t.id} value={t.id}>{t.source} to {t.destination}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="expenseVehicleId">Vehicle (Optional)</Label>
+                    <Select value={expenseForm.vehicleId} onValueChange={(val) => setExpenseForm({ ...expenseForm, vehicleId: val === 'none' ? '' : val })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select vehicle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {vehicles.map((v: { id: string, registration: string }) => (
+                          <SelectItem key={v.id} value={v.id}>{v.registration}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="type">Expense Type</Label>
+                    <Select value={expenseForm.type} onValueChange={(val) => setExpenseForm({ ...expenseForm, type: val })} required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TOLL">Toll</SelectItem>
+                        <SelectItem value="PARKING">Parking</SelectItem>
+                        <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                        <SelectItem value="REPAIR">Repair</SelectItem>
+                        <SelectItem value="ALLOWANCE">Allowance</SelectItem>
+                        <SelectItem value="OTHER">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="amount">Amount (₹)</Label>
+                      <Input id="amount" type="number" min="0" step="1" value={expenseForm.amount} onChange={e => setExpenseForm({...expenseForm, amount: e.target.value})} required />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="expDate">Date</Label>
+                      <Input id="expDate" type="datetime-local" value={expenseForm.date} onChange={e => setExpenseForm({...expenseForm, date: e.target.value})} required />
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="notes">Notes</Label>
+                    <Input id="notes" value={expenseForm.notes} onChange={e => setExpenseForm({...expenseForm, notes: e.target.value})} />
+                  </div>
+                  <DialogFooter>
+                    <DialogClose render={<Button variant="outline" type="button" />}>
+                      Cancel
+                    </DialogClose>
+                    <Button type="submit">Save Expense</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+          </div>
         </div>
-        
+
         <Card>
           <CardHeader>
-            <CardTitle>Recent Fuel Logs</CardTitle>
+            <CardTitle className="text-lg uppercase text-muted-foreground tracking-wider font-semibold">Fuel Logs</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
                   <tr>
-                    <th className="px-4 py-3 rounded-tl-lg">Date</th>
-                    <th className="px-4 py-3">Vehicle</th>
-                    <th className="px-4 py-3">Location</th>
+                    <th className="px-4 py-3 rounded-tl-lg">Vehicle</th>
+                    <th className="px-4 py-3">Date</th>
                     <th className="px-4 py-3">Liters</th>
-                    <th className="px-4 py-3 rounded-tr-lg">Total Cost</th>
+                    <th className="px-4 py-3 rounded-tr-lg">Fuel Cost</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {fuelLogs.slice(0, 10).map((log: any) => (
+                  {fuelLogs.length > 0 ? fuelLogs.slice((fuelPage - 1) * ITEMS_PER_PAGE, fuelPage * ITEMS_PER_PAGE).map((log: { id: string, vehicle?: { registration: string }, vehicleId: string, date: string, liters: number, cost: number }) => (
                     <tr key={log.id} className="border-b border-border hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 font-medium">{new Date(log.date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</td>
-                      <td className="px-4 py-3 text-primary">{log.vehicle?.registration || log.vehicleId}</td>
-                      <td className="px-4 py-3">{log.location}</td>
-                      <td className="px-4 py-3">{log.liters}</td>
-                      <td className="px-4 py-3 font-medium">₹{log.cost}</td>
+                      <td className="px-4 py-3 font-medium text-primary">{log.vehicle?.registration || log.vehicleId}</td>
+                      <td className="px-4 py-3">{new Date(log.date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                      <td className="px-4 py-3">{log.liters} L</td>
+                      <td className="px-4 py-3 font-medium">{log.cost.toLocaleString('en-IN')}</td>
                     </tr>
-                  ))}
+                  )) : (
+                    <tr>
+                      <td colSpan={4} className="text-center py-4 text-muted-foreground">No fuel logs found.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
+            {fuelLogs.length > ITEMS_PER_PAGE && (
+              <div className="mt-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        href="#" 
+                        onClick={(e) => { e.preventDefault(); setFuelPage(p => Math.max(1, p - 1)); }} 
+                        className={fuelPage === 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <span className="text-sm px-2">Page {fuelPage} of {Math.ceil(fuelLogs.length / ITEMS_PER_PAGE)}</span>
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationNext 
+                        href="#" 
+                        onClick={(e) => { e.preventDefault(); setFuelPage(p => Math.min(Math.ceil(fuelLogs.length / ITEMS_PER_PAGE), p + 1)); }} 
+                        className={fuelPage === Math.ceil(fuelLogs.length / ITEMS_PER_PAGE) ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg uppercase text-muted-foreground tracking-wider font-semibold">Other Expenses (Toll / Misc)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-3 rounded-tl-lg">Trip</th>
+                    <th className="px-4 py-3">Vehicle</th>
+                    <th className="px-4 py-3">Toll</th>
+                    <th className="px-4 py-3">Other</th>
+                    <th className="px-4 py-3">Maint. (Linked)</th>
+                    <th className="px-4 py-3 rounded-tr-lg">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tripExpenses.length > 0 ? tripExpenses.slice((expensePage - 1) * ITEMS_PER_PAGE, expensePage * ITEMS_PER_PAGE).map((exp: { tripName: string, vehicle: string, toll: number, other: number, maint: number, status: string }, idx: number) => {
+                    const total = exp.toll + exp.other + exp.maint;
+                    return (
+                      <tr key={idx} className="border-b border-border hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-3 font-medium">{exp.tripName}</td>
+                        <td className="px-4 py-3 text-primary">{exp.vehicle}</td>
+                        <td className="px-4 py-3">{exp.toll.toLocaleString('en-IN')}</td>
+                        <td className="px-4 py-3">{exp.other.toLocaleString('en-IN')}</td>
+                        <td className="px-4 py-3">{exp.maint.toLocaleString('en-IN')}</td>
+                        <td className="px-4 py-3 font-medium">
+                          {total.toLocaleString('en-IN')} 
+                          <span className="ml-2 text-xs text-muted-foreground capitalize">
+                            {exp.status ? exp.status.toLowerCase() : ''}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  }) : (
+                    <tr>
+                      <td colSpan={6} className="text-center py-4 text-muted-foreground">No expenses found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {tripExpenses.length > ITEMS_PER_PAGE && (
+              <div className="mt-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        href="#" 
+                        onClick={(e) => { e.preventDefault(); setExpensePage(p => Math.max(1, p - 1)); }} 
+                        className={expensePage === 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <span className="text-sm px-2">Page {expensePage} of {Math.ceil(tripExpenses.length / ITEMS_PER_PAGE)}</span>
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationNext 
+                        href="#" 
+                        onClick={(e) => { e.preventDefault(); setExpensePage(p => Math.min(Math.ceil(tripExpenses.length / ITEMS_PER_PAGE), p + 1)); }} 
+                        className={expensePage === Math.ceil(tripExpenses.length / ITEMS_PER_PAGE) ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="p-6">
+            <h2 className="text-xl font-bold tracking-tight text-center">
+              TOTAL OPERATIONAL COST (AUTO) = FUEL + MAINTENANCE <span className="text-primary ml-2">{totalOpCost.toLocaleString('en-IN')}</span>
+            </h2>
           </CardContent>
         </Card>
       </div>
