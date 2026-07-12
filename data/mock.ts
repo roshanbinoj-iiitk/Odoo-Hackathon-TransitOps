@@ -57,7 +57,7 @@ export interface FuelLog {
   id: string;
   vehicleId: string;
   date: string;
-  gallons: number;
+  liters: number;
   cost: number;
   location: string;
 }
@@ -120,7 +120,7 @@ export const mockFuelLogs: FuelLog[] = Array.from({ length: 200 }).map((_, i) =>
   id: generateId('FUEL', i + 1),
   vehicleId: mockVehicles[i % mockVehicles.length].id,
   date: new Date(Date.now() - Math.random() * 15000000000).toISOString().split('T')[0],
-  gallons: Math.floor(Math.random() * 150) + 50,
+  liters: Math.floor(Math.random() * 150) + 50,
   cost: Math.floor(Math.random() * 600) + 150,
   location: `Pilot Travel Center - ${US_CITIES[i % US_CITIES.length]}`,
 }));

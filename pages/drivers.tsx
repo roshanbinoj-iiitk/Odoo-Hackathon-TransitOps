@@ -68,7 +68,7 @@ export default function Drivers() {
   const queryUrl = `/api/drivers?search=${encodeURIComponent(search)}&status=${statusFilter}&sort=${sortBy}`;
   const { data: drivers, mutate, error } = useSWR(queryUrl, fetcher);
   const { data: dashboardData } = useSWR('/api/dashboard', fetcher);
-  const displayDrivers = drivers || [];
+  const displayDrivers = Array.isArray(drivers) ? drivers : [];
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -499,7 +499,7 @@ export default function Drivers() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">License Expiry</p>
-                    <p className="font-medium">{new Date(selectedDriver.licenseExpiry).toLocaleDateString()}</p>
+                    <p className="font-medium">{new Date(selectedDriver.licenseExpiry).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Safety Score</p>

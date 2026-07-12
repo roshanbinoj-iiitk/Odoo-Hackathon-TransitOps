@@ -80,9 +80,9 @@ export default function Trips() {
   const { data: driversData } = useSWR('/api/drivers', fetcher);
   const { data: tripsData, mutate: mutateTrips } = useSWR('/api/trips', fetcher);
 
-  const vehicles = vehiclesData || [];
-  const drivers = driversData || [];
-  const trips = tripsData || [];
+  const vehicles = Array.isArray(vehiclesData) ? vehiclesData : [];
+  const drivers = Array.isArray(driversData) ? driversData : [];
+  const trips = Array.isArray(tripsData) ? tripsData : [];
 
   const onSubmit = async (data: TripFormValues) => {
     setIsSubmitting(true);
@@ -327,12 +327,12 @@ export default function Trips() {
                         <div className="relative pl-6 pb-4 border-l-2 border-muted">
                           <div className="absolute w-3 h-3 bg-card border-2 border-primary rounded-full -left-[7px] top-1"></div>
                           <p className="text-sm font-medium">{trip.source}</p>
-                          <p className="text-xs text-muted-foreground">Dep: {new Date(trip.scheduledDeparture).toLocaleDateString()}</p>
+                          <p className="text-xs text-muted-foreground">Dep: {new Date(trip.scheduledDeparture).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
                         </div>
                         <div className="relative pl-6">
                           <div className="absolute w-3 h-3 bg-muted border-2 border-muted-foreground rounded-full -left-[7px] top-1"></div>
                           <p className="text-sm font-medium">{trip.destination}</p>
-                          <p className="text-xs text-muted-foreground">ETA: {new Date(trip.estimatedArrival).toLocaleDateString()}</p>
+                          <p className="text-xs text-muted-foreground">ETA: {new Date(trip.estimatedArrival).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
                         </div>
                       </div>
                       
@@ -391,12 +391,12 @@ export default function Trips() {
                         <div className="relative pl-6 pb-4 border-l-2 border-muted">
                           <div className="absolute w-3 h-3 bg-card border-2 border-primary rounded-full -left-[7px] top-1"></div>
                           <p className="text-sm font-medium">{trip.source}</p>
-                          <p className="text-xs text-muted-foreground">Dep: {new Date(trip.scheduledDeparture).toLocaleDateString()}</p>
+                          <p className="text-xs text-muted-foreground">Dep: {new Date(trip.scheduledDeparture).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
                         </div>
                         <div className="relative pl-6">
                           <div className="absolute w-3 h-3 bg-muted border-2 border-muted-foreground rounded-full -left-[7px] top-1"></div>
                           <p className="text-sm font-medium">{trip.destination}</p>
-                          <p className="text-xs text-muted-foreground">ETA: {new Date(trip.estimatedArrival).toLocaleDateString()}</p>
+                          <p className="text-xs text-muted-foreground">ETA: {new Date(trip.estimatedArrival).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
                         </div>
                       </div>
                       

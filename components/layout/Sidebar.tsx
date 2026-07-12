@@ -66,10 +66,9 @@ export default function Sidebar() {
       <div className="flex-1 overflow-y-auto py-6 flex flex-col gap-1 px-3">
         {navigation.map((item) => {
           // RBAC Logic
-          if (user?.role === 'FLEET_MANAGER' && ['Trips', 'Drivers'].includes(item.name)) return null;
           if (user?.role === 'DISPATCHER' && ['Maintenance', 'Fuel & Expenses', 'Analytics', 'Settings'].includes(item.name)) return null;
-          if (user?.role === 'SAFETY_OFFICER' && ['Trips', 'Fleet', 'Fuel & Expenses', 'Analytics'].includes(item.name)) return null;
-          if (user?.role === 'FINANCIAL_ANALYST' && ['Trips', 'Fleet', 'Drivers', 'Maintenance'].includes(item.name)) return null;
+          if (user?.role === 'SAFETY_OFFICER' && ['Fuel & Expenses', 'Analytics', 'Settings'].includes(item.name)) return null;
+          if (user?.role === 'FINANCIAL_ANALYST' && ['Trips', 'Drivers', 'Settings'].includes(item.name)) return null;
 
           const isActive = router.pathname.startsWith(item.href);
           

@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         prisma.trip.count({ where: { status: { in: ['DRAFT', 'ASSIGNED'] } } }),
         prisma.driver.count({ where: { status: 'ON_TRIP' } }),
         prisma.trip.aggregate({ _sum: { distance: true }, where: { status: 'COMPLETED' } }),
-        prisma.fuelLog.aggregate({ _sum: { gallons: true, cost: true } }),
+        prisma.fuelLog.aggregate({ _sum: { liters: true, cost: true } }),
         prisma.fuelLog.aggregate({ _sum: { cost: true } }),
         prisma.maintenanceLog.aggregate({ _sum: { cost: true } }),
         prisma.driver.count(),
@@ -51,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ]);
 
       const totalDistance = totalDistanceAgg._sum.distance || 0;
-      const totalFuel = totalFuelAgg._sum.gallons || 0;
+      const totalFuel = totalFuelAgg._sum.liters || 0;
       
       const metrics = {
         activeVehicles,

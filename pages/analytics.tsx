@@ -19,11 +19,12 @@ import useSWR from "swr";
 const fetcher = (url: string) => fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(res => res.json());
 
 export default function Analytics() {
-  const { data: reports } = useSWR('/api/reports', fetcher);
+  const { data: reportsData } = useSWR('/api/reports', fetcher);
   const { data: dashboard } = useSWR('/api/dashboard', fetcher);
 
-  const totalRevenue = reports?.reduce((acc: number, r: any) => acc + r.revenue, 0) || 0;
-  const totalCost = reports?.reduce((acc: number, r: any) => acc + r.operationalCost, 0) || 0;
+  const reports = Array.isArray(reportsData) ? reportsData : [];
+  const totalRevenue = reports.reduce((acc: number, r: any) => acc + (r.revenue || 0), 0);
+  const totalCost = reports.reduce((acc: number, r: any) => acc + (r.operationalCost || 0), 0);
   
   const roiData = [
     { name: "Live Data", revenue: totalRevenue, cost: totalCost },

@@ -321,7 +321,7 @@ export default function Fleet() {
   }, [user]);
 
   const table = useReactTable({
-    data: vehicles || [],
+    data: Array.isArray(vehicles) ? vehicles : [],
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),

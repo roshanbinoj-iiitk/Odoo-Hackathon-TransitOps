@@ -136,7 +136,7 @@ async function main() {
     const contactNumber = generateIndianPhone();
     const licenseCategory = ['LMV', 'HMV', 'HGMV'][Math.floor(Math.random() * 3)];
     
-    const avatar = JSON.stringify({ contact: contactNumber, category: licenseCategory });
+    const avatar = JSON.stringify({ category: licenseCategory });
 
     const drv = await prisma.driver.create({ 
       data: {
@@ -147,6 +147,7 @@ async function main() {
         experienceYears,
         tripsCompleted,
         status: status as any,
+        contactNumber,
         avatar
       }
     });
@@ -178,6 +179,7 @@ async function main() {
         distance: Math.floor(Math.random() * 800) + 50,
         weight: Math.min(vehicle.capacity, Math.floor(Math.random() * 1000) + 100),
         status: tripStatus as any,
+        revenue: Math.floor(Math.random() * 20000) + 5000,
         scheduledDeparture: new Date(),
         estimatedArrival: new Date(Date.now() + 1000 * 60 * 60 * Math.floor(Math.random() * 24 + 4)),
       }
@@ -189,15 +191,16 @@ async function main() {
   // 5. Generate Fuel Logs
   for (let i = 0; i < 50; i++) {
     const vehicle = createdVehicles[Math.floor(Math.random() * createdVehicles.length)];
-    const gallons = [35, 68, 110, 220][Math.floor(Math.random() * 4)];
+    const liters = [35, 68, 110, 220][Math.floor(Math.random() * 4)];
     const costPerLiter = 90; // INR approx
     await prisma.fuelLog.create({
       data: {
         vehicleId: vehicle.id,
         date: new Date(Date.now() - 1000 * 60 * 60 * 24 * Math.floor(Math.random() * 30)),
-        gallons,
-        cost: gallons * costPerLiter,
-        location: indianCities[Math.floor(Math.random() * indianCities.length)]
+        liters,
+        cost: liters * costPerLiter,
+        location: indianCities[Math.floor(Math.random() * indianCities.length)],
+        odometer: vehicle.mileage - Math.floor(Math.random() * 5000),
       }
     });
   }
@@ -219,7 +222,7 @@ async function main() {
       data: {
         vehicleId: vehicle.id,
         tripId: trip ? trip.id : null,
-        type,
+        type: type.toUpperCase() as any,
         amount,
         date: new Date(Date.now() - 1000 * 60 * 60 * 24 * Math.floor(Math.random() * 30)),
         notes: `Sample ${type} expense`

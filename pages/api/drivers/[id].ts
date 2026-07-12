@@ -29,6 +29,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ message: 'Internal server error' });
       }
     } else if (req.method === 'PUT') {
+      if (user.role !== 'FLEET_MANAGER') {
+        return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
+      }
       try {
         const validation = updateDriverSchema.safeParse(req.body);
         if (!validation.success) {
@@ -69,6 +72,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ message: 'Failed to update driver.' });
       }
     } else if (req.method === 'DELETE') {
+      if (user.role !== 'FLEET_MANAGER') {
+        return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
+      }
       try {
         const driver = await prisma.driver.findUnique({
           where: { id },

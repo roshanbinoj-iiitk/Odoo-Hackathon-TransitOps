@@ -51,6 +51,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ message: 'Internal server error' });
       }
     } else if (req.method === 'POST') {
+      if (user.role !== 'FLEET_MANAGER') {
+        return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
+      }
       try {
         const validation = createDriverSchema.safeParse(req.body);
         if (!validation.success) {

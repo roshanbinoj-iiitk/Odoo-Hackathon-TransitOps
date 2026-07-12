@@ -9,7 +9,7 @@ import {
   Download
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,16 +55,16 @@ const COLORS = ['var(--primary)', 'var(--chart-2)', 'var(--chart-3)', 'var(--cha
 
 export default function FuelExpenses() {
   const { data: fuelLogsData } = useSWR('/api/fuel', fetcher);
-  const fuelLogs = fuelLogsData || [];
+  const fuelLogs = Array.isArray(fuelLogsData) ? fuelLogsData : [];
 
   const totalFuelCost = fuelLogs.reduce((acc: number, log: any) => acc + (log.cost || 0), 0);
-  const totalGallons = fuelLogs.reduce((acc: number, log: any) => acc + (log.gallons || 0), 0);
+  const totalLiters = fuelLogs.reduce((acc: number, log: any) => acc + (log.liters || 0), 0);
 
   const exportCSV = () => {
     const csvContent = "data:text/csv;charset=utf-8," + 
       "Date,Vehicle,Location,Liters,Cost\n" +
       fuelLogs.map((log: any) => 
-        `${new Date(log.date).toLocaleDateString()},${log.vehicle?.registration || log.vehicleId},"${log.location}",${log.gallons},${log.cost}`
+        `${new Date(log.date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })},${log.vehicle?.registration || log.vehicleId},"${log.location}",${log.liters},${log.cost}`
       ).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -81,10 +81,10 @@ export default function FuelExpenses() {
     autoTable(doc, {
       head: [['Date', 'Vehicle', 'Location', 'Liters', 'Cost (INR)']],
       body: fuelLogs.map((log: any) => [
-        new Date(log.date).toLocaleDateString(),
+        new Date(log.date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' }),
         log.vehicle?.registration || log.vehicleId,
         log.location,
-        String(log.gallons),
+        String(log.liters),
         String(log.cost)
       ]),
     });
@@ -104,10 +104,8 @@ export default function FuelExpenses() {
             <p className="text-muted-foreground">Financial overview of fleet operations.</p>
           </div>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <Download className="mr-2 h-4 w-4" /> Export Report
-              </Button>
+            <DropdownMenuTrigger className={buttonVariants({ variant: "outline" })}>
+              <Download className="mr-2 h-4 w-4" /> Export Report
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem onClick={exportCSV}>Download CSV</DropdownMenuItem>
@@ -137,7 +135,7 @@ export default function FuelExpenses() {
               <Fuel className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalGallons.toLocaleString()} L</div>
+              <div className="text-2xl font-bold">{totalLiters.toLocaleString()} L</div>
               <p className="text-xs flex items-center mt-1 text-success">
                 <TrendingDown className="h-3 w-3 mr-1" />
                 -2.1% efficiency improved
@@ -250,10 +248,10 @@ export default function FuelExpenses() {
                 <tbody>
                   {fuelLogs.slice(0, 10).map((log: any) => (
                     <tr key={log.id} className="border-b border-border hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 font-medium">{new Date(log.date).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 font-medium">{new Date(log.date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</td>
                       <td className="px-4 py-3 text-primary">{log.vehicle?.registration || log.vehicleId}</td>
                       <td className="px-4 py-3">{log.location}</td>
-                      <td className="px-4 py-3">{log.gallons}</td>
+                      <td className="px-4 py-3">{log.liters}</td>
                       <td className="px-4 py-3 font-medium">₹{log.cost}</td>
                     </tr>
                   ))}

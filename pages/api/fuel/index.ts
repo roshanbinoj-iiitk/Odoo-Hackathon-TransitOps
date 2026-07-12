@@ -11,10 +11,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           orderBy: { createdAt: 'desc' }
         });
         return res.status(200).json(logs);
-      } catch (error) {
-        return res.status(500).json({ message: 'Internal server error' });
+      } catch (error: any) {
+        return res.status(500).json({ message: error.message });
       }
     } else if (req.method === 'POST') {
+      if (!['FLEET_MANAGER', 'FINANCIAL_ANALYST'].includes(user.role)) {
+        return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
+      }
       try {
         const data = req.body;
 
@@ -25,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           data: {
             vehicleId: data.vehicleId,
             date: new Date(data.date),
-            gallons: Number(data.gallons),
+            liters: Number(data.liters),
             cost: Number(data.cost),
             location: data.location,
           }

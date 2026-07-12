@@ -19,6 +19,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ message: 'Internal server error' });
       }
     } else if (req.method === 'PUT') {
+      if (user.role !== 'FLEET_MANAGER') {
+        return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
+      }
       try {
         const data = req.body;
         
@@ -57,6 +60,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ message: 'Internal server error' });
       }
     } else if (req.method === 'DELETE') {
+      if (user.role !== 'FLEET_MANAGER') {
+        return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
+      }
       try {
         // Prevent deleting if it has active trips (optional safety measure, but let's try to delete safely)
         const activeTrips = await prisma.trip.findFirst({

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,7 +41,7 @@ export default function Dashboard() {
   const { data: dashboardData, error: dashError } = useSWR('/api/dashboard', fetcher);
   const { data: tripsData, error: tripsError } = useSWR('/api/trips', fetcher);
 
-  const recentTrips = tripsData ? tripsData.slice(0, 5) : [];
+  const recentTrips = Array.isArray(tripsData) ? tripsData.slice(0, 5) : [];
   
   const revenueData = [
     { name: "Mon", total: 12400 },
@@ -96,8 +96,8 @@ export default function Dashboard() {
           </div>
           <div className="flex gap-2">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">Download Report</Button>
+              <DropdownMenuTrigger className={buttonVariants({ variant: "outline" })}>
+                Download Report
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem onClick={exportCSV}>Download CSV</DropdownMenuItem>
@@ -301,7 +301,7 @@ export default function Dashboard() {
                           {trip.status}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3">{new Date(trip.estimatedArrival).toLocaleDateString()}</td>
+                      <td className="px-4 py-3">{new Date(trip.estimatedArrival).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -21,8 +21,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const reports = vehicles.map(vehicle => {
         const totalDistance = vehicle.trips.reduce((acc, trip) => acc + trip.distance, 0);
-        const totalFuelGallons = vehicle.fuelLogs.reduce((acc, log) => acc + log.gallons, 0);
-        const fuelEfficiency = totalFuelGallons > 0 ? totalDistance / totalFuelGallons : 0;
+        const totalFuelLiters = vehicle.fuelLogs.reduce((acc, log) => acc + log.liters, 0);
+        const fuelEfficiency = totalFuelLiters > 0 ? totalDistance / totalFuelLiters : 0;
         
         const fuelCost = vehicle.fuelLogs.reduce((acc, log) => acc + log.cost, 0);
         const maintenanceCost = vehicle.maintenance.reduce((acc, log) => acc + log.cost, 0);
