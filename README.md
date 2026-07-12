@@ -1,40 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# TransitOps
+
+TransitOps is a comprehensive Fleet and Logistics Management platform built for the Odoo Hackathon. It provides a centralized dashboard to manage vehicles, drivers, trips, maintenance, and expenses with built-in Role-Based Access Control (RBAC).
+
+## Features
+
+- **Dashboard**: High-level KPIs, fleet utilization, and active trip tracking.
+- **Fleet Management**: Track vehicle status, health score, mileage, and maintenance logs.
+- **Driver Management**: Manage driver profiles, licenses, safety scores, and availability.
+- **Trip Lifecycle**: Dispatch, track, and complete trips with real-time status updates.
+- **Maintenance & Fuel Logs**: Record maintenance costs, fuel expenses, and track operational efficiency.
+- **Analytics & Reports**: Comprehensive reports for fuel efficiency, ROI, and top costliest vehicles.
+- **Role-Based Access Control (RBAC)**: Fine-grained permissions for Fleet Managers, Dispatchers, Safety Officers, and Financial Analysts.
+
+## Tech Stack
+
+- **Frontend**: Next.js (Pages Router), React, Tailwind CSS, shadcn/ui, Recharts, Framer Motion
+- **Backend**: Next.js API Routes
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: JWT + bcrypt
+- **Data Fetching**: SWR
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js (v18+)
+- PostgreSQL database
 
+### 1. Environment Setup
+
+Install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ensure you have a running PostgreSQL instance. Update the `DATABASE_URL` in the `.env` file at the root of the project:
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/transitops?schema=public"
+JWT_SECRET="supersecret_jwt_key_transitops_hackathon_2026"
+```
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+### 2. Database Initialization
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+Run the Prisma commands to generate the client and push the schema to your database:
+```bash
+npx prisma generate
+npx prisma db push
+```
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+Seed the database with default roles and mock data:
+```bash
+npx prisma db seed
+```
+*(This will populate the database with default users and mock data for vehicles, drivers, and trips).*
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Start Development Server
 
-## Learn More
+Run the development server:
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) with your browser to view the application.
 
-To learn more about Next.js, take a look at the following resources:
+## API & Backend Documentation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+For detailed backend integration notes, API endpoints, and authentication workflows, refer to the [Backend README](./README-BACKEND.md).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+- `pages/`: Contains Next.js pages and API routes (`pages/api/`).
+- `components/`: Reusable UI components.
+- `prisma/`: Prisma schema and database seed script.
+- `lib/`: Utility functions and database client configuration.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+## License
+MIT

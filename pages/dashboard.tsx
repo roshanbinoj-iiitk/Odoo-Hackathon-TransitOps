@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { 
@@ -50,7 +50,19 @@ import {
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
-  const { data: dashboardData, error: dashError } = useSWR('/api/dashboard', fetcher);
+  const [vehicleType, setVehicleType] = useState('all');
+  const [status, setStatus] = useState('all');
+  const [region, setRegion] = useState('all');
+
+  const queryParams = new URLSearchParams();
+  if (vehicleType !== 'all') queryParams.append('type', vehicleType);
+  if (status !== 'all') queryParams.append('status', status);
+  if (region !== 'all') queryParams.append('region', region);
+
+  const queryString = queryParams.toString();
+  const dashboardUrl = queryString ? `/api/dashboard?${queryString}` : '/api/dashboard';
+
+  const { data: dashboardData, error: dashError } = useSWR(dashboardUrl, fetcher);
   const { data: tripsData, error: tripsError } = useSWR('/api/trips', fetcher);
 
   const recentTrips = Array.isArray(tripsData) ? tripsData.slice(0, 5) : [];
@@ -128,34 +140,48 @@ export default function Dashboard() {
             Filters
           </div>
           <div className="flex flex-wrap gap-3">
-            <Select defaultValue="all">
+            <Select value={vehicleType} onValueChange={setVehicleType}>
               <SelectTrigger className="w-[160px] bg-background">
                 <SelectValue placeholder="Vehicle Type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Vehicle Type: All</SelectItem>
-                <SelectItem value="truck">Trucks</SelectItem>
-                <SelectItem value="van">Vans</SelectItem>
+                <SelectItem value="Light Commercial">Light Commercial</SelectItem>
+                <SelectItem value="Medium Commercial">Medium Commercial</SelectItem>
+                <SelectItem value="Heavy Commercial">Heavy Commercial</SelectItem>
+                <SelectItem value="Passenger Commercial">Passenger Commercial</SelectItem>
+                <SelectItem value="Pickup">Pickup</SelectItem>
               </SelectContent>
             </Select>
-            <Select defaultValue="all">
+            <Select value={status} onValueChange={setStatus}>
               <SelectTrigger className="w-[160px] bg-background">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Status: All</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="maintenance">Maintenance</SelectItem>
+                <SelectItem value="AVAILABLE">Available</SelectItem>
+                <SelectItem value="ON_TRIP">On Trip</SelectItem>
+                <SelectItem value="IN_SHOP">In Shop</SelectItem>
+                <SelectItem value="RETIRED">Retired</SelectItem>
               </SelectContent>
             </Select>
-            <Select defaultValue="all">
+            <Select value={region} onValueChange={setRegion}>
               <SelectTrigger className="w-[160px] bg-background">
                 <SelectValue placeholder="Region" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Region: All</SelectItem>
-                <SelectItem value="north">North</SelectItem>
-                <SelectItem value="south">South</SelectItem>
+                <SelectItem value="Kerala">Kerala</SelectItem>
+                <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
+                <SelectItem value="Karnataka">Karnataka</SelectItem>
+                <SelectItem value="Maharashtra">Maharashtra</SelectItem>
+                <SelectItem value="Delhi">Delhi</SelectItem>
+                <SelectItem value="Gujarat">Gujarat</SelectItem>
+                <SelectItem value="Telangana">Telangana</SelectItem>
+                <SelectItem value="Andhra Pradesh">Andhra Pradesh</SelectItem>
+                <SelectItem value="Rajasthan">Rajasthan</SelectItem>
+                <SelectItem value="Uttar Pradesh">Uttar Pradesh</SelectItem>
+                <SelectItem value="West Bengal">West Bengal</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -74,6 +74,7 @@ This document outlines the backend implementation for the TransitOps application
 - `GET /api/reports`: Computes vehicle-specific ROI, Fuel Efficiency, and Operational Costs based on Indian constraints (INR / KM).
 
 ## UI Integration Status
-- The `Login` page is integrated and connects to `/api/auth/login`. It stores the JWT in `localStorage`.
-- The `Dashboard` page is partially migrated to SWR hooks (`/api/dashboard` and `/api/trips`), preserving UI styling components from the original mock layout.
-- For remaining pages (`fleet`, `drivers`, `trips`), repeat the `useSWR` pattern shown in `dashboard.tsx` to seamlessly drop in API data where `mock.ts` imports were originally used.
+- The frontend is now fully integrated with the Next.js API endpoints.
+- **Authentication**: The `Login` page securely connects to `/api/auth/login` and stores the JWT in `localStorage`.
+- **RBAC**: Role-Based Access Control is actively enforced across both UI navigation and API routes.
+- **All Modules Integrated**: `Dashboard`, `Analytics`, `Fleet`, `Drivers`, `Trips`, `Maintenance`, `Fuel`, and `Settings` have been successfully migrated to use live database API calls and SWR mutations, replacing the initial `mock.ts` setup.

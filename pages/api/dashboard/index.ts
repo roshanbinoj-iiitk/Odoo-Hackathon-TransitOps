@@ -15,12 +15,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const vehicleWhere: any = {};
       if (type) vehicleWhere.type = type as string;
       if (status) vehicleWhere.status = status as string;
+      if (region) vehicleWhere.region = region as string;
       
       const [
-        totalVehicles,
-        activeVehicles,
-        availableVehicles,
-        maintenanceVehicles,
+        vehicleCounts,
         activeTrips,
         pendingTrips,
         driversOnDuty,
@@ -33,22 +31,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         offDutyDrivers,
         suspendedDrivers
       ] = await Promise.all([
-        prisma.vehicle.count({ where: vehicleWhere }),
-        prisma.vehicle.count({ where: { ...vehicleWhere, status: 'ON_TRIP' } }),
-        prisma.vehicle.count({ where: { ...vehicleWhere, status: 'AVAILABLE' } }),
-        prisma.vehicle.count({ where: { ...vehicleWhere, status: 'IN_SHOP' } }),
-        prisma.trip.count({ where: { status: 'DISPATCHED' } }),
-        prisma.trip.count({ where: { status: { in: ['DRAFT', 'ASSIGNED'] } } }),
+        prisma.vehicle.groupBy({ by: ['status'], where: vehicleWhere, _count: { _all: true } }),
+        prisma.trip.count({ where: { status: 'DISPATCHED', vehicle: vehicleWhere } }),
+        prisma.trip.count({ where: { status: { in: ['DRAFT', 'ASSIGNED'] }, vehicle: vehicleWhere } }),
         prisma.driver.count({ where: { status: 'ON_TRIP' } }),
-        prisma.trip.aggregate({ _sum: { distance: true }, where: { status: 'COMPLETED' } }),
-        prisma.fuelLog.aggregate({ _sum: { liters: true, cost: true } }),
-        prisma.fuelLog.aggregate({ _sum: { cost: true } }),
-        prisma.maintenanceLog.aggregate({ _sum: { cost: true } }),
+        prisma.trip.aggregate({ _sum: { distance: true }, where: { status: 'COMPLETED', vehicle: vehicleWhere } }),
+        prisma.fuelLog.aggregate({ _sum: { liters: true, cost: true }, where: { vehicle: vehicleWhere } }),
+        prisma.fuelLog.aggregate({ _sum: { cost: true }, where: { vehicle: vehicleWhere } }),
+        prisma.maintenanceLog.aggregate({ _sum: { cost: true }, where: { vehicle: vehicleWhere } }),
         prisma.driver.count(),
         prisma.driver.count({ where: { status: 'AVAILABLE' } }),
         prisma.driver.count({ where: { status: 'OFF_DUTY' } }),
         prisma.driver.count({ where: { status: 'SUSPENDED' } })
       ]);
+
+      let totalVehicles = 0;
+      let activeVehicles = 0;
+      let availableVehicles = 0;
+      let maintenanceVehicles = 0;
+
+      for (const vc of vehicleCounts) {
+        totalVehicles += vc._count._all;
+        if (vc.status === 'ON_TRIP') activeVehicles = vc._count._all;
+        if (vc.status === 'AVAILABLE') availableVehicles = vc._count._all;
+        if (vc.status === 'IN_SHOP') maintenanceVehicles = vc._count._all;
+      }
 
       const totalDistance = totalDistanceAgg._sum.distance || 0;
       const totalFuel = totalFuelAgg._sum.liters || 0;
