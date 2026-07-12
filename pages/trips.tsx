@@ -73,7 +73,7 @@ export default function Trips() {
     }
   }, []);
 
-  const canCreate = user?.role === 'FLEET_MANAGER' || user?.role === 'DISPATCHER';
+  const canCreate = user?.role === 'DISPATCHER';
   
   const form = useForm<TripFormValues>({
     resolver: zodResolver(tripSchema) as any,

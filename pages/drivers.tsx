@@ -63,7 +63,7 @@ export default function Drivers() {
     }
   }, []);
 
-  const canManage = user?.role === 'FLEET_MANAGER';
+  const canManage = user?.role === 'FLEET_MANAGER' || user?.role === 'SAFETY_OFFICER';
   
   const queryUrl = `/api/drivers?search=${encodeURIComponent(search)}&status=${statusFilter}&sort=${sortBy}`;
   const { data: drivers, mutate, error } = useSWR(queryUrl, fetcher);
