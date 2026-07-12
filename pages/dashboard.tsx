@@ -1,5 +1,6 @@
 import React from "react";
 import Head from "next/head";
+import Link from "next/link";
 import { 
   Truck, 
   Route, 
@@ -8,7 +9,11 @@ import {
   Wrench,
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Activity,
+  Users,
+  Percent,
+  Filter
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +24,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import useSWR from "swr";
@@ -32,6 +44,7 @@ import {
   CartesianGrid, 
   Tooltip as RechartsTooltip, 
   ResponsiveContainer,
+  Legend,
   LineChart,
   Line
 } from "recharts";
@@ -44,13 +57,13 @@ export default function Dashboard() {
   const recentTrips = Array.isArray(tripsData) ? tripsData.slice(0, 5) : [];
   
   const revenueData = [
-    { name: "Mon", total: 12400 },
-    { name: "Tue", total: 14500 },
-    { name: "Wed", total: 11200 },
-    { name: "Thu", total: 15800 },
-    { name: "Fri", total: 18900 },
-    { name: "Sat", total: 9400 },
-    { name: "Sun", total: 8100 },
+    { name: "Mon", revenue: 12400, cost: 8400 },
+    { name: "Tue", revenue: 14500, cost: 9200 },
+    { name: "Wed", revenue: 11200, cost: 7100 },
+    { name: "Thu", revenue: 15800, cost: 10400 },
+    { name: "Fri", revenue: 18900, cost: 12100 },
+    { name: "Sat", revenue: 9400, cost: 6300 },
+    { name: "Sun", revenue: 8100, cost: 5200 },
   ];
 
   const exportCSV = () => {
@@ -104,7 +117,49 @@ export default function Dashboard() {
                 <DropdownMenuItem onClick={exportPDF}>Download PDF</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button>New Dispatch</Button>
+            <Link href="/trips">
+              <Button>New Dispatch</Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted/30 rounded-lg border border-border">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wider">
+            <Filter className="w-4 h-4" />
+            Filters
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Select defaultValue="all">
+              <SelectTrigger className="w-[160px] bg-background">
+                <SelectValue placeholder="Vehicle Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Vehicle Type: All</SelectItem>
+                <SelectItem value="truck">Trucks</SelectItem>
+                <SelectItem value="van">Vans</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select defaultValue="all">
+              <SelectTrigger className="w-[160px] bg-background">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Status: All</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="maintenance">Maintenance</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select defaultValue="all">
+              <SelectTrigger className="w-[160px] bg-background">
+                <SelectValue placeholder="Region" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Region: All</SelectItem>
+                <SelectItem value="north">North</SelectItem>
+                <SelectItem value="south">South</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -113,77 +168,105 @@ export default function Dashboard() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card className="border-t-4 border-t-primary">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Active Vehicles</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Active Vehicles</CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {String(dashboardData?.activeVehicles || 0).padStart(2, '0')}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+          
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+            <Card className="border-t-4 border-t-success">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Available Vehicles</CardTitle>
                 <Truck className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {dashboardData?.activeVehicles + dashboardData?.availableVehicles || 0}
+                  {String(dashboardData?.availableVehicles || 0).padStart(2, '0')}
                 </div>
-                <p className="text-xs flex items-center mt-1 text-success">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  +4 from yesterday
-                </p>
               </CardContent>
             </Card>
           </motion.div>
-          
+
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <Card className="border-t-4 border-t-info">
+            <Card className="border-t-4 border-t-destructive">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Active Trips</CardTitle>
-                <Route className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {dashboardData?.activeTrips || 0}
-                </div>
-                <p className="text-xs flex items-center mt-1 text-success">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  +12% this week
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-          
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <Card className="border-t-4 border-t-warning">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Vehicles in Shop</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Vehicles In Maintenance</CardTitle>
                 <Wrench className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {dashboardData?.maintenanceVehicles || 0}
+                  {String(dashboardData?.maintenanceVehicles || 0).padStart(2, '0')}
                 </div>
-                <p className="text-xs flex items-center mt-1 text-destructive">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  +2 needs immediate attention
-                </p>
               </CardContent>
             </Card>
           </motion.div>
-          
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-            <Card className="border-t-4 border-t-success">
+
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+            <Card className="border-t-4 border-t-info">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">On-Time Delivery</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Active Trips</CardTitle>
+                <Route className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {String(dashboardData?.activeTrips || 0).padStart(2, '0')}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Card className="border-t-4 border-t-warning">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Pending Trips</CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">96.4%</div>
-                <p className="text-xs flex items-center mt-1 text-success">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  +1.2% from last month
-                </p>
+                <div className="text-2xl font-bold">
+                  {String(dashboardData?.pendingTrips || 0).padStart(2, '0')}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+            <Card className="border-t-4 border-t-primary">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Drivers On Duty</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {String(dashboardData?.driversOnDuty || 0).padStart(2, '0')}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+            <Card className="border-t-4 border-t-success">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Fleet Utilization</CardTitle>
+                <Percent className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {Math.round(dashboardData?.fleetUtilization || 0)}%
+                </div>
               </CardContent>
             </Card>
           </motion.div>
         </div>
 
         {/* Charts & Tables */}
-        <div className="grid gap-6 md:grid-cols-7">
-          <Card className="md:col-span-4">
+        <div className="grid gap-6 md:grid-cols-1">
+          <Card>
             <CardHeader>
               <CardTitle>Revenue vs Operational Cost</CardTitle>
             </CardHeader>
@@ -210,105 +293,101 @@ export default function Dashboard() {
                       cursor={{ fill: 'transparent' }}
                       contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     />
-                    <Bar dataKey="total" fill="var(--primary)" radius={[4, 4, 0, 0]} barSize={40} />
+                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                    <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={25} />
+                    <Bar dataKey="cost" name="Operational Cost" fill="#f97316" radius={[4, 4, 0, 0]} barSize={25} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
-          
-          <Card className="md:col-span-3">
-            <CardHeader>
-              <CardTitle>Recent Alerts</CardTitle>
+        </div>
+
+        {/* Recent Trips & Vehicle Status */}
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card className="md:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="uppercase tracking-wider">Recent Trips</CardTitle>
+              <Link href="/trips">
+                <Button variant="ghost" size="sm">View All</Button>
+              </Link>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="bg-destructive/10 p-2 rounded-full">
-                    <AlertCircle className="w-4 h-4 text-destructive" />
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
+                    <tr>
+                      <th className="px-4 py-3 rounded-tl-lg">Trip</th>
+                      <th className="px-4 py-3">Vehicle</th>
+                      <th className="px-4 py-3">Driver</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3 rounded-tr-lg">ETA</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentTrips.map((trip: any) => (
+                      <tr key={trip.id} className="border-b border-border hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-3 font-medium">{trip.id}</td>
+                        <td className="px-4 py-3">{trip.vehicle?.registration || trip.vehicleId}</td>
+                        <td className="px-4 py-3">{trip.driver?.name || '—'}</td>
+                        <td className="px-4 py-3">
+                          <Badge 
+                            variant="secondary"
+                            className={
+                              trip.status === "COMPLETED" ? "bg-success/10 text-success" :
+                              trip.status === "DISPATCHED" ? "bg-info/10 text-info" :
+                              trip.status === "ASSIGNED" ? "bg-warning/10 text-warning" :
+                              "bg-muted text-muted-foreground"
+                            }
+                          >
+                            {trip.status}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          {trip.status === "COMPLETED" ? "—" : 
+                           trip.status === "DRAFT" ? "Awaiting vehicle" : 
+                           trip.estimatedArrival ? new Date(trip.estimatedArrival).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Vehicle Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="uppercase tracking-wider">Vehicle Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6 mt-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full bg-success"></div>
+                    <span className="text-sm font-medium">Available</span>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">Engine Temp Warning</p>
-                    <p className="text-sm text-muted-foreground">Vehicle TRK-4923 needs immediate inspection.</p>
-                    <p className="text-xs text-muted-foreground">2 hours ago</p>
-                  </div>
+                  <span className="text-xl font-bold">{String(dashboardData?.availableVehicles || 0).padStart(2, '0')}</span>
                 </div>
-                <div className="flex items-start gap-4">
-                  <div className="bg-warning/10 p-2 rounded-full">
-                    <AlertTriangle className="w-4 h-4 text-warning" />
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full bg-primary"></div>
+                    <span className="text-sm font-medium">On Trip</span>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">Driver License Expiring</p>
-                    <p className="text-sm text-muted-foreground">John Smith's CDL expires in 15 days.</p>
-                    <p className="text-xs text-muted-foreground">5 hours ago</p>
-                  </div>
+                  <span className="text-xl font-bold">{String(dashboardData?.activeVehicles || 0).padStart(2, '0')}</span>
                 </div>
-                <div className="flex items-start gap-4">
-                  <div className="bg-success/10 p-2 rounded-full">
-                    <CheckCircle2 className="w-4 h-4 text-success" />
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full bg-destructive"></div>
+                    <span className="text-sm font-medium">In Shop</span>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">Maintenance Completed</p>
-                    <p className="text-sm text-muted-foreground">TRK-8812 brake replacement finished.</p>
-                    <p className="text-xs text-muted-foreground">Yesterday</p>
-                  </div>
+                  <span className="text-xl font-bold">{String(dashboardData?.maintenanceVehicles || 0).padStart(2, '0')}</span>
                 </div>
-                <Button variant="outline" className="w-full mt-4">View All Alerts</Button>
               </div>
             </CardContent>
           </Card>
         </div>
-
-        {/* Recent Trips Table */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent Dispatches</CardTitle>
-            <Button variant="ghost" size="sm">View All</Button>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
-                  <tr>
-                    <th className="px-4 py-3 rounded-tl-lg">Trip ID</th>
-                    <th className="px-4 py-3">Route</th>
-                    <th className="px-4 py-3">Vehicle</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 rounded-tr-lg">ETA</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentTrips.map((trip: any) => (
-                    <tr key={trip.id} className="border-b border-border hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 font-medium">{trip.id}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col">
-                          <span>{trip.source}</span>
-                          <span className="text-muted-foreground text-xs">to {trip.destination}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">{trip.vehicle?.registration || trip.vehicleId}</td>
-                      <td className="px-4 py-3">
-                        <Badge 
-                          variant="secondary"
-                          className={
-                            trip.status === "COMPLETED" ? "bg-success/10 text-success" :
-                            trip.status === "DISPATCHED" ? "bg-info/10 text-info" :
-                            trip.status === "ASSIGNED" ? "bg-warning/10 text-warning" :
-                            "bg-muted text-muted-foreground"
-                          }
-                        >
-                          {trip.status}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3">{new Date(trip.estimatedArrival).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </>
   );
