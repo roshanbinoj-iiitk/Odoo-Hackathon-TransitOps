@@ -25,12 +25,19 @@ export function verifyToken(token: string): DecodedToken | null {
 
 export function requireAuth(handler: (req: NextApiRequest, res: NextApiResponse, user: DecodedToken) => void | Promise<void>) {
   return async (req: NextApiRequest, res: NextApiResponse) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    let token = req.cookies.token;
+
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+      }
+    }
+
+    if (!token) {
       return res.status(401).json({ message: 'Unauthorized: No token provided' });
     }
 
-    const token = authHeader.split(' ')[1];
     const decoded = verifyToken(token);
 
     if (!decoded) {

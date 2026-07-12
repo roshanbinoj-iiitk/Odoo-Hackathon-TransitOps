@@ -48,6 +48,18 @@ type TripFormValues = z.infer<typeof tripSchema>;
 
 export default function Trips() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [user, setUser] = useState<{name: string; role: string} | null>(null);
+
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {}
+    }
+  }, []);
+
+  const canCreate = user?.role === 'FLEET_MANAGER' || user?.role === 'DISPATCHER';
   
   const form = useForm<TripFormValues>({
     resolver: zodResolver(tripSchema) as any,
@@ -128,119 +140,126 @@ export default function Trips() {
 
         <div className="grid lg:grid-cols-2 gap-6 flex-1 min-h-0">
           {/* Left Panel - Creation Form */}
-          <Card className="flex flex-col h-full overflow-hidden border-border shadow-sm">
-            <CardHeader className="bg-muted/30 border-b border-border pb-4">
-              <CardTitle>Create New Trip</CardTitle>
-              <CardDescription>Enter trip details to assign a vehicle and driver.</CardDescription>
-            </CardHeader>
-            <div className="overflow-y-auto flex-1 p-6">
-              <form id="trip-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2 col-span-2 sm:col-span-1">
-                    <Label>Source Origin</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input placeholder="e.g. Warehouse A" className="pl-9" {...form.register("source")} />
+          {canCreate ? (
+            <Card className="flex flex-col h-full overflow-hidden border-border shadow-sm">
+              <CardHeader className="bg-muted/30 border-b border-border pb-4">
+                <CardTitle>Create New Trip</CardTitle>
+                <CardDescription>Enter trip details to assign a vehicle and driver.</CardDescription>
+              </CardHeader>
+              <div className="overflow-y-auto flex-1 p-6">
+                <form id="trip-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2 col-span-2 sm:col-span-1">
+                      <Label>Source Origin</Label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input placeholder="e.g. Warehouse A" className="pl-9" {...form.register("source")} />
+                      </div>
+                      {form.formState.errors.source && <p className="text-sm text-destructive">{form.formState.errors.source.message}</p>}
                     </div>
-                    {form.formState.errors.source && <p className="text-sm text-destructive">{form.formState.errors.source.message}</p>}
-                  </div>
-                  
-                  <div className="space-y-2 col-span-2 sm:col-span-1">
-                    <Label>Destination</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input placeholder="e.g. Distribution Center B" className="pl-9" {...form.register("destination")} />
+                    
+                    <div className="space-y-2 col-span-2 sm:col-span-1">
+                      <Label>Destination</Label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input placeholder="e.g. Distribution Center B" className="pl-9" {...form.register("destination")} />
+                      </div>
+                      {form.formState.errors.destination && <p className="text-sm text-destructive">{form.formState.errors.destination.message}</p>}
                     </div>
-                    {form.formState.errors.destination && <p className="text-sm text-destructive">{form.formState.errors.destination.message}</p>}
                   </div>
-                </div>
 
-                <Separator />
+                  <Separator />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2 col-span-2 sm:col-span-1">
-                    <Label>Assign Vehicle</Label>
-                    <Select onValueChange={(val) => val && form.setValue("vehicleId", val as string)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select vehicle" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {vehicles.filter((v: any) => v.status === "AVAILABLE").map((v: any) => (
-                          <SelectItem key={v.id} value={v.id}>{v.registration} ({v.type})</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {form.formState.errors.vehicleId && <p className="text-sm text-destructive">{form.formState.errors.vehicleId.message}</p>}
-                  </div>
-                  
-                  <div className="space-y-2 col-span-2 sm:col-span-1">
-                    <Label>Assign Driver</Label>
-                    <Select onValueChange={(val) => val && form.setValue("driverId", val as string)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select driver" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {drivers.filter((d: any) => d.status === "AVAILABLE").map((d: any) => (
-                          <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {form.formState.errors.driverId && <p className="text-sm text-destructive">{form.formState.errors.driverId.message}</p>}
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2 col-span-2">
-                    <Label>Cargo Details</Label>
-                    <div className="relative">
-                      <Package className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input placeholder="Description of goods" className="pl-9" {...form.register("cargo")} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2 col-span-2 sm:col-span-1">
+                      <Label>Assign Vehicle</Label>
+                      <Select onValueChange={(val) => val && form.setValue("vehicleId", val as string)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select vehicle" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {vehicles.filter((v: any) => v.status === "AVAILABLE").map((v: any) => (
+                            <SelectItem key={v.id} value={v.id}>{v.registration} ({v.type})</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {form.formState.errors.vehicleId && <p className="text-sm text-destructive">{form.formState.errors.vehicleId.message}</p>}
                     </div>
-                    {form.formState.errors.cargo && <p className="text-sm text-destructive">{form.formState.errors.cargo.message}</p>}
+                    
+                    <div className="space-y-2 col-span-2 sm:col-span-1">
+                      <Label>Assign Driver</Label>
+                      <Select onValueChange={(val) => val && form.setValue("driverId", val as string)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select driver" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {drivers.filter((d: any) => d.status === "AVAILABLE").map((d: any) => (
+                            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {form.formState.errors.driverId && <p className="text-sm text-destructive">{form.formState.errors.driverId.message}</p>}
+                    </div>
                   </div>
 
-                  <div className="space-y-2 col-span-2 sm:col-span-1">
-                    <Label>Weight (lbs)</Label>
-                    <Input type="number" placeholder="40000" {...form.register("weight")} />
-                    {form.formState.errors.weight && <p className="text-sm text-destructive">{form.formState.errors.weight.message}</p>}
-                  </div>
+                  <Separator />
 
-                  <div className="space-y-2 col-span-2 sm:col-span-1">
-                    <Label>Schedule Date</Label>
-                    <Popover>
-                      <PopoverTrigger render={
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !form.watch("date") && "text-muted-foreground"
-                          )}
-                        />
-                      }>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {form.watch("date") ? format(form.watch("date"), "PPP") : <span>Pick a date</span>}
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={form.watch("date")}
-                          onSelect={(date) => date && form.setValue("date", date)}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    {form.formState.errors.date && <p className="text-sm text-destructive">{form.formState.errors.date.message}</p>}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2 col-span-2">
+                      <Label>Cargo Details</Label>
+                      <div className="relative">
+                        <Package className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input placeholder="Description of goods" className="pl-9" {...form.register("cargo")} />
+                      </div>
+                      {form.formState.errors.cargo && <p className="text-sm text-destructive">{form.formState.errors.cargo.message}</p>}
+                    </div>
+
+                    <div className="space-y-2 col-span-2 sm:col-span-1">
+                      <Label>Weight (lbs)</Label>
+                      <Input type="number" placeholder="40000" {...form.register("weight")} />
+                      {form.formState.errors.weight && <p className="text-sm text-destructive">{form.formState.errors.weight.message}</p>}
+                    </div>
+
+                    <div className="space-y-2 col-span-2 sm:col-span-1">
+                      <Label>Schedule Date</Label>
+                      <Popover>
+                        <PopoverTrigger render={
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !form.watch("date") && "text-muted-foreground"
+                            )}
+                          />
+                        }>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {form.watch("date") ? format(form.watch("date"), "PPP") : <span>Pick a date</span>}
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={form.watch("date")}
+                            onSelect={(date) => date && form.setValue("date", date)}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {form.formState.errors.date && <p className="text-sm text-destructive">{form.formState.errors.date.message}</p>}
+                    </div>
                   </div>
-                </div>
-              </form>
-            </div>
-            <div className="p-6 border-t border-border bg-muted/10">
-              <Button type="submit" form="trip-form" className="w-full" disabled={isSubmitting || !form.formState.isValid}>
-                {isSubmitting ? "Dispatching..." : "Create & Dispatch Trip"}
-              </Button>
-            </div>
-          </Card>
+                </form>
+              </div>
+              <div className="p-6 border-t border-border bg-muted/10">
+                <Button type="submit" form="trip-form" className="w-full" disabled={isSubmitting || !form.formState.isValid}>
+                  {isSubmitting ? "Dispatching..." : "Create & Dispatch Trip"}
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <Card className="flex flex-col items-center justify-center h-full overflow-hidden border-border shadow-sm bg-muted/30">
+              <CardTitle className="text-muted-foreground mb-2">Permission Denied</CardTitle>
+              <CardDescription>You do not have permission to dispatch trips.</CardDescription>
+            </Card>
+          )}
 
           {/* Right Panel - Live Dispatch Board */}
           <Card className="flex flex-col h-full overflow-hidden border-border shadow-sm bg-muted/10">

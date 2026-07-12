@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import { mockDrivers } from '../data/mock';
 
 const prisma = new PrismaClient();
 
@@ -30,8 +29,12 @@ function generateRegistration(stateCode: string) {
   return `${stateCode}${rto}${letters}${num}`;
 }
 
+const expenseTypes = ['Toll', 'Parking', 'Repair', 'Maintenance', 'Other'];
+const indianCities = ['Kochi', 'Bengaluru', 'Chennai', 'Mumbai', 'Hyderabad', 'Pune', 'Coimbatore', 'Delhi', 'Jaipur', 'Ahmedabad'];
+
 async function main() {
   console.log('Seeding database...');
+  await prisma.expense.deleteMany({});
   await prisma.trip.deleteMany({});
   await prisma.maintenanceLog.deleteMany({});
   await prisma.fuelLog.deleteMany({});
@@ -43,29 +46,31 @@ async function main() {
   const password = await bcrypt.hash('password123', 10);
   
   const users = [
-    { email: 'admin@transitops.in', name: 'Admin Manager', role: 'FLEET_MANAGER', password },
-    { email: 'driver@transitops.in', name: 'John Driver', role: 'DRIVER', password },
+    { email: 'manager@transitops.in', name: 'Fleet Manager', role: 'FLEET_MANAGER', password },
+    { email: 'dispatcher@transitops.in', name: 'Dispatcher', role: 'DISPATCHER', password },
     { email: 'safety@transitops.in', name: 'Safety Officer', role: 'SAFETY_OFFICER', password },
     { email: 'finance@transitops.in', name: 'Financial Analyst', role: 'FINANCIAL_ANALYST', password },
   ];
 
   for (const user of users) {
-    await prisma.user.upsert({
-      where: { email: user.email },
-      update: {},
-      create: user as any,
-    });
+    await prisma.user.create({ data: user as any });
   }
   console.log('Users seeded');
 
   // 2. Seed Vehicles
   const vehiclesData = [];
-  for (let i = 0; i < 40; i++) {
+  const uniqueRegs = new Set();
+  
+  while (vehiclesData.length < 40) {
     const vModel = vehicleModels[Math.floor(Math.random() * vehicleModels.length)];
     const stateIdx = Math.floor(Math.random() * indianStates.length);
     const cost = Math.floor(Math.random() * (vModel.maxCost - vModel.minCost) + vModel.minCost);
     const mileage = Math.floor(Math.random() * 250000 + 5000);
+    const registration = generateRegistration(stateCodes[stateIdx]);
     
+    if (uniqueRegs.has(registration)) continue;
+    uniqueRegs.add(registration);
+
     // Weighted status
     let status = 'AVAILABLE';
     const rand = Math.random();
@@ -74,7 +79,7 @@ async function main() {
     else if (rand >= 0.95) status = 'RETIRED';
 
     vehiclesData.push({
-      registration: generateRegistration(stateCodes[stateIdx]),
+      registration,
       make: vModel.make,
       model: vModel.model,
       year: 2024 - Math.floor(Math.random() * 8),
@@ -88,16 +93,8 @@ async function main() {
     });
   }
 
-  // Deduplicate registrations just in case
-  const uniqueRegs = new Set();
-  const filteredVehicles = vehiclesData.filter(v => {
-    if (uniqueRegs.has(v.registration)) return false;
-    uniqueRegs.add(v.registration);
-    return true;
-  });
-
   const createdVehicles = [];
-  for (const v of filteredVehicles) {
+  for (const v of vehiclesData) {
     const created = await prisma.vehicle.create({ data: v });
     createdVehicles.push(created);
   }
@@ -132,14 +129,13 @@ async function main() {
       ? new Date(Date.now() - 1000 * 60 * 60 * 24 * (Math.floor(Math.random() * 300) + 1)) 
       : new Date(Date.now() + 1000 * 60 * 60 * 24 * (Math.floor(Math.random() * 1000) + 30));
 
-    const safetyScore = Number((Math.random() * 40 + 60).toFixed(1)); // 60 to 100
+    const safetyScore = Number((Math.random() * 40 + 60).toFixed(1));
     const experienceYears = Math.floor(Math.random() * 15) + 1;
     const tripsCompleted = Math.floor(Math.random() * 500);
     const status = driverStatuses[Math.floor(Math.random() * driverStatuses.length)];
     const contactNumber = generateIndianPhone();
     const licenseCategory = ['LMV', 'HMV', 'HGMV'][Math.floor(Math.random() * 3)];
     
-    // Save contact and category in avatar field for UI
     const avatar = JSON.stringify({ contact: contactNumber, category: licenseCategory });
 
     const drv = await prisma.driver.create({ 
@@ -156,29 +152,81 @@ async function main() {
     });
     createdDrivers.push(drv);
   }
-  console.log('Drivers seeded');
+  console.log(`Drivers seeded: ${createdDrivers.length}`);
 
   // 4. Generate random trips
-  for (let i = 0; i < 15; i++) {
+  const createdTrips = [];
+  for (let i = 0; i < 20; i++) {
     const vehicle = createdVehicles[Math.floor(Math.random() * createdVehicles.length)];
     const driver = createdDrivers[Math.floor(Math.random() * createdDrivers.length)];
+    const source = indianCities[Math.floor(Math.random() * indianCities.length)];
+    let destination = indianCities[Math.floor(Math.random() * indianCities.length)];
+    while (destination === source) {
+      destination = indianCities[Math.floor(Math.random() * indianCities.length)];
+    }
     
-    await prisma.trip.create({
+    let tripStatus = 'COMPLETED';
+    if (vehicle.status === 'ON_TRIP' && driver.status === 'ON_TRIP') tripStatus = 'DISPATCHED';
+    
+    const trip = await prisma.trip.create({
       data: {
-        source: 'Mumbai',
-        destination: 'Pune',
+        source,
+        destination,
         vehicleId: vehicle.id,
         driverId: driver.id,
-        cargo: 'Electronics',
-        distance: 150,
-        weight: vehicle.capacity,
-        status: 'COMPLETED',
+        cargo: 'Electronics/FMCG',
+        distance: Math.floor(Math.random() * 800) + 50,
+        weight: Math.min(vehicle.capacity, Math.floor(Math.random() * 1000) + 100),
+        status: tripStatus as any,
         scheduledDeparture: new Date(),
-        estimatedArrival: new Date(Date.now() + 1000 * 60 * 60 * 4),
+        estimatedArrival: new Date(Date.now() + 1000 * 60 * 60 * Math.floor(Math.random() * 24 + 4)),
+      }
+    });
+    createdTrips.push(trip);
+  }
+  console.log(`Trips seeded: ${createdTrips.length}`);
+
+  // 5. Generate Fuel Logs
+  for (let i = 0; i < 50; i++) {
+    const vehicle = createdVehicles[Math.floor(Math.random() * createdVehicles.length)];
+    const gallons = [35, 68, 110, 220][Math.floor(Math.random() * 4)];
+    const costPerLiter = 90; // INR approx
+    await prisma.fuelLog.create({
+      data: {
+        vehicleId: vehicle.id,
+        date: new Date(Date.now() - 1000 * 60 * 60 * 24 * Math.floor(Math.random() * 30)),
+        gallons,
+        cost: gallons * costPerLiter,
+        location: indianCities[Math.floor(Math.random() * indianCities.length)]
       }
     });
   }
-  console.log('Trips seeded');
+  console.log('Fuel Logs seeded');
+
+  // 6. Generate Expenses
+  for (let i = 0; i < 60; i++) {
+    const vehicle = createdVehicles[Math.floor(Math.random() * createdVehicles.length)];
+    const trip = Math.random() > 0.5 ? createdTrips[Math.floor(Math.random() * createdTrips.length)] : null;
+    const type = expenseTypes[Math.floor(Math.random() * expenseTypes.length)];
+    let amount = 0;
+    
+    if (type === 'Toll') amount = Math.floor(Math.random() * 1000) + 100;
+    else if (type === 'Parking') amount = Math.floor(Math.random() * 500) + 50;
+    else if (type === 'Repair') amount = Math.floor(Math.random() * 15000) + 1000;
+    else amount = Math.floor(Math.random() * 5000) + 500;
+
+    await prisma.expense.create({
+      data: {
+        vehicleId: vehicle.id,
+        tripId: trip ? trip.id : null,
+        type,
+        amount,
+        date: new Date(Date.now() - 1000 * 60 * 60 * 24 * Math.floor(Math.random() * 30)),
+        notes: `Sample ${type} expense`
+      }
+    });
+  }
+  console.log('Expenses seeded');
 
   console.log('Seeding completed successfully!');
 }

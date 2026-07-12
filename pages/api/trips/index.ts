@@ -27,6 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (vehicle.status === 'RETIRED') return res.status(400).json({ message: 'Retired vehicles cannot be dispatched' });
         if (vehicle.status === 'IN_SHOP') return res.status(400).json({ message: 'In Shop vehicles cannot be dispatched' });
         if (vehicle.status === 'ON_TRIP') return res.status(400).json({ message: 'Vehicle is already on a trip' });
+        if (Number(data.weight) > vehicle.capacity) return res.status(400).json({ message: 'Weight exceeds vehicle capacity' });
 
         const driver = await prisma.driver.findUnique({ where: { id: data.driverId } });
         if (!driver) return res.status(404).json({ message: 'Driver not found' });

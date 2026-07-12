@@ -16,13 +16,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const log = await prisma.maintenanceLog.findUnique({ where: { id: logId }, include: { vehicle: true } });
       if (!log) return res.status(404).json({ message: 'Maintenance log not found' });
 
-      await prisma.maintenanceLog.update({ where: { id: logId }, data: { status } });
+      const tx: any[] = [
+        prisma.maintenanceLog.update({ where: { id: logId }, data: { status } })
+      ];
 
       if (status === 'IN_PROGRESS') {
-        await prisma.vehicle.update({ where: { id: log.vehicleId }, data: { status: 'IN_SHOP' } });
+        tx.push(prisma.vehicle.update({ where: { id: log.vehicleId }, data: { status: 'IN_SHOP' } }));
       } else if (status === 'COMPLETED' && log.vehicle.status !== 'RETIRED') {
-        await prisma.vehicle.update({ where: { id: log.vehicleId }, data: { status: 'AVAILABLE' } });
+        tx.push(prisma.vehicle.update({ where: { id: log.vehicleId }, data: { status: 'AVAILABLE' } }));
       }
+
+      await prisma.$transaction(tx);
 
       return res.status(200).json({ message: 'Maintenance status updated successfully' });
     } catch (error) {

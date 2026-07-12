@@ -14,24 +14,24 @@ import {
   ComposedChart
 } from "recharts";
 
-const utilizationData = [
-  { name: "Mon", util: 85 },
-  { name: "Tue", util: 88 },
-  { name: "Wed", util: 92 },
-  { name: "Thu", util: 87 },
-  { name: "Fri", util: 94 },
-  { name: "Sat", util: 70 },
-  { name: "Sun", util: 65 },
-];
+import useSWR from "swr";
 
-const roiData = [
-  { name: "Q1", revenue: 450000, cost: 280000 },
-  { name: "Q2", revenue: 520000, cost: 310000 },
-  { name: "Q3", revenue: 480000, cost: 295000 },
-  { name: "Q4", revenue: 610000, cost: 350000 },
-];
+const fetcher = (url: string) => fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(res => res.json());
 
 export default function Analytics() {
+  const { data: reports } = useSWR('/api/reports', fetcher);
+  const { data: dashboard } = useSWR('/api/dashboard', fetcher);
+
+  const totalRevenue = reports?.reduce((acc: number, r: any) => acc + r.revenue, 0) || 0;
+  const totalCost = reports?.reduce((acc: number, r: any) => acc + r.operationalCost, 0) || 0;
+  
+  const roiData = [
+    { name: "Live Data", revenue: totalRevenue, cost: totalCost },
+  ];
+
+  const utilizationData = [
+    { name: "Live", util: dashboard?.fleetUtilization || 0 },
+  ];
   return (
     <>
       <Head>
@@ -52,13 +52,13 @@ export default function Analytics() {
             <CardContent>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={utilizationData}>
+                  <BarChart data={utilizationData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
                     <Tooltip contentStyle={{ borderRadius: '10px' }} />
-                    <Line type="monotone" dataKey="util" stroke="var(--primary)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                  </LineChart>
+                    <Bar dataKey="util" fill="var(--primary)" radius={[4, 4, 0, 0]} barSize={40} />
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
             </CardContent>

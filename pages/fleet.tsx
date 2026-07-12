@@ -87,6 +87,16 @@ const fetcher = (url: string) => fetch(url, { headers: { Authorization: `Bearer 
 export default function Fleet() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [user, setUser] = useState<{name: string; role: string} | null>(null);
+
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {}
+    }
+  }, []);
 
   const { data: vehicles, mutate: mutateVehicles } = useSWR<Vehicle[]>('/api/vehicles', fetcher);
 
@@ -209,99 +219,106 @@ export default function Fleet() {
     }
   };
 
-  const columns = useMemo<ColumnDef<Vehicle>[]>(() => [
-    {
-      accessorKey: "registration",
-      header: "Registration",
-      cell: ({ row }) => <div className="font-medium text-primary">{row.getValue("registration")}</div>,
-    },
-    {
-      accessorKey: "make",
-      header: "Make & Model",
-      cell: ({ row }) => <div>{row.original.make} {row.original.model}</div>,
-    },
-    {
-      accessorKey: "type",
-      header: "Type",
-    },
-    {
-      accessorKey: "region",
-      header: "State",
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue("status") as string;
-        return (
-          <Badge 
-            variant="secondary"
-            className={
-              status === "AVAILABLE" ? "bg-success/10 text-success hover:bg-success/20" :
-              status === "ON_TRIP" ? "bg-info/10 text-info hover:bg-info/20" :
-              status === "IN_SHOP" ? "bg-warning/10 text-warning hover:bg-warning/20" :
-              "bg-muted text-muted-foreground hover:bg-muted/80"
-            }
-          >
-            {status}
-          </Badge>
-        );
+  const columns = useMemo<ColumnDef<Vehicle>[]>(() => {
+    const cols: ColumnDef<Vehicle>[] = [
+      {
+        accessorKey: "registration",
+        header: "Registration",
+        cell: ({ row }) => <div className="font-medium text-primary">{row.getValue("registration")}</div>,
       },
-    },
-    {
-      accessorKey: "mileage",
-      header: "Odometer",
-      cell: ({ row }) => <div>{((row.getValue("mileage") as number) || 0).toLocaleString()} km</div>,
-    },
-    {
-      accessorKey: "capacity",
-      header: "Capacity",
-      cell: ({ row }) => <div>{((row.getValue("capacity") as number) || 0).toLocaleString()} kg</div>,
-    },
-    {
-      accessorKey: "acquisitionCost",
-      header: "Acquisition Cost",
-      cell: ({ row }) => <div>{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format((row.getValue("acquisitionCost") as number) || 0)}</div>,
-    },
-    {
-      id: "actions",
-      enableHiding: false,
-      cell: ({ row }) => {
-        const vehicle = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => handleOpenEditDialog(vehicle)}>
-                  <Pencil className="mr-2 h-4 w-4" /> Edit Details
+      {
+        accessorKey: "make",
+        header: "Make & Model",
+        cell: ({ row }) => <div>{row.original.make} {row.original.model}</div>,
+      },
+      {
+        accessorKey: "type",
+        header: "Type",
+      },
+      {
+        accessorKey: "region",
+        header: "State",
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }) => {
+          const status = row.getValue("status") as string;
+          return (
+            <Badge 
+              variant="secondary"
+              className={
+                status === "AVAILABLE" ? "bg-success/10 text-success hover:bg-success/20" :
+                status === "ON_TRIP" ? "bg-info/10 text-info hover:bg-info/20" :
+                status === "IN_SHOP" ? "bg-warning/10 text-warning hover:bg-warning/20" :
+                "bg-muted text-muted-foreground hover:bg-muted/80"
+              }
+            >
+              {status}
+            </Badge>
+          );
+        },
+      },
+      {
+        accessorKey: "mileage",
+        header: "Odometer",
+        cell: ({ row }) => <div>{((row.getValue("mileage") as number) || 0).toLocaleString()} km</div>,
+      },
+      {
+        accessorKey: "capacity",
+        header: "Capacity",
+        cell: ({ row }) => <div>{((row.getValue("capacity") as number) || 0).toLocaleString()} kg</div>,
+      },
+      {
+        accessorKey: "acquisitionCost",
+        header: "Acquisition Cost",
+        cell: ({ row }) => <div>{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format((row.getValue("acquisitionCost") as number) || 0)}</div>,
+      }
+    ];
+
+    if (user?.role === 'FLEET_MANAGER') {
+      cols.push({
+        id: "actions",
+        enableHiding: false,
+        cell: ({ row }) => {
+          const vehicle = row.original;
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => handleOpenEditDialog(vehicle)}>
+                    <Pencil className="mr-2 h-4 w-4" /> Edit Details
+                  </DropdownMenuItem>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>Change Status</DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'AVAILABLE')}>AVAILABLE</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'ON_TRIP')}>ON_TRIP</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'IN_SHOP')}>IN_SHOP</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'RETIRED')}>RETIRED</DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleOpenDeleteDialog(vehicle)} className="text-destructive focus:text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete Vehicle
                 </DropdownMenuItem>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>Change Status</DropdownMenuSubTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'AVAILABLE')}>AVAILABLE</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'ON_TRIP')}>ON_TRIP</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'IN_SHOP')}>IN_SHOP</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange(vehicle.id, 'RETIRED')}>RETIRED</DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuSub>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleOpenDeleteDialog(vehicle)} className="text-destructive focus:text-destructive">
-                <Trash2 className="mr-2 h-4 w-4" /> Delete Vehicle
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      },
-    },
-  ], []);
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      });
+    }
+    
+    return cols;
+  }, [user]);
 
   const table = useReactTable({
     data: vehicles || [],
@@ -335,9 +352,11 @@ export default function Fleet() {
             <h1 className="text-3xl font-bold tracking-tight">Vehicle Registry</h1>
             <p className="text-muted-foreground">Manage and track your entire fleet.</p>
           </div>
-          <Button onClick={handleOpenAddDialog}>
-            <Plus className="mr-2 h-4 w-4" /> Add Vehicle
-          </Button>
+          {user?.role === 'FLEET_MANAGER' && (
+            <Button onClick={handleOpenAddDialog}>
+              <Plus className="mr-2 h-4 w-4" /> Add Vehicle
+            </Button>
+          )}
         </div>
 
         <Card className="p-0 border-0 shadow-sm sm:border sm:p-1 overflow-hidden bg-card">

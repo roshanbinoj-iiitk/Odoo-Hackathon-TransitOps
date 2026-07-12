@@ -21,6 +21,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    if (user.role !== role) {
+      return res.status(403).json({ message: 'Selected role does not match assigned role' });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -31,6 +35,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       email: user.email,
       role: user.role,
     });
+
+    res.setHeader(
+      'Set-Cookie',
+      `token=${token}; HttpOnly; Path=/; Max-Age=86400; SameSite=Strict`
+    );
 
     res.status(200).json({
       token,

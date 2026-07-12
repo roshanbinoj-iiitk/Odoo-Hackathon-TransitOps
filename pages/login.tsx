@@ -210,10 +210,10 @@ export default function Login() {
                         <SelectValue placeholder="Select your role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="admin">Administrator</SelectItem>
-                        <SelectItem value="dispatcher">Dispatcher</SelectItem>
-                        <SelectItem value="fleet_manager">Fleet Manager</SelectItem>
-                        <SelectItem value="driver">Driver</SelectItem>
+                        <SelectItem value="FLEET_MANAGER">Fleet Manager</SelectItem>
+                        <SelectItem value="DISPATCHER">Dispatcher</SelectItem>
+                        <SelectItem value="SAFETY_OFFICER">Safety Officer</SelectItem>
+                        <SelectItem value="FINANCIAL_ANALYST">Financial Analyst</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.role && (

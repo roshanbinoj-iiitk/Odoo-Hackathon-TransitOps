@@ -10,7 +10,8 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { mockFuelLogs } from "@/data/mock";
+import useSWR from "swr";
+const fetcher = (url: string) => fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(res => res.json());
 import { 
   AreaChart, 
   Area, 
@@ -45,8 +46,11 @@ const expenseBreakdown = [
 const COLORS = ['var(--primary)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)'];
 
 export default function FuelExpenses() {
-  const totalFuelCost = mockFuelLogs.reduce((acc, log) => acc + log.cost, 0);
-  const totalGallons = mockFuelLogs.reduce((acc, log) => acc + log.gallons, 0);
+  const { data: fuelLogsData } = useSWR('/api/fuel', fetcher);
+  const fuelLogs = fuelLogsData || [];
+
+  const totalFuelCost = fuelLogs.reduce((acc: number, log: any) => acc + (log.cost || 0), 0);
+  const totalGallons = fuelLogs.reduce((acc: number, log: any) => acc + (log.gallons || 0), 0);
 
   return (
     <>
@@ -197,10 +201,10 @@ export default function FuelExpenses() {
                   </tr>
                 </thead>
                 <tbody>
-                  {mockFuelLogs.slice(0, 10).map((log) => (
+                  {fuelLogs.slice(0, 10).map((log: any) => (
                     <tr key={log.id} className="border-b border-border hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 font-medium">{log.date}</td>
-                      <td className="px-4 py-3 text-primary">{log.vehicleId}</td>
+                      <td className="px-4 py-3 font-medium">{new Date(log.date).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 text-primary">{log.vehicle?.registration || log.vehicleId}</td>
                       <td className="px-4 py-3">{log.location}</td>
                       <td className="px-4 py-3">{log.gallons}</td>
                       <td className="px-4 py-3 font-medium">${log.cost}</td>

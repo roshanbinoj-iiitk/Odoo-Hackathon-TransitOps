@@ -22,19 +22,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const vehicle = await prisma.vehicle.findUnique({ where: { id: data.vehicleId } });
         if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
 
-        const newLog = await prisma.maintenanceLog.create({
-          data: {
-            vehicleId: data.vehicleId,
-            service: data.service,
-            date: new Date(data.date),
-            technician: data.technician,
-            cost: Number(data.cost),
-            status: status
-          }
-        });
+        const tx: any[] = [];
+        let newLog: any;
 
         if (status === 'IN_PROGRESS') {
-          await prisma.vehicle.update({ where: { id: data.vehicleId }, data: { status: 'IN_SHOP' } });
+          const [createdLog] = await prisma.$transaction([
+            prisma.maintenanceLog.create({
+              data: {
+                vehicleId: data.vehicleId,
+                service: data.service,
+                date: new Date(data.date),
+                technician: data.technician,
+                cost: Number(data.cost),
+                status: status
+              }
+            }),
+            prisma.vehicle.update({ where: { id: data.vehicleId }, data: { status: 'IN_SHOP' } })
+          ]);
+          newLog = createdLog;
+        } else {
+          newLog = await prisma.maintenanceLog.create({
+            data: {
+              vehicleId: data.vehicleId,
+              service: data.service,
+              date: new Date(data.date),
+              technician: data.technician,
+              cost: Number(data.cost),
+              status: status
+            }
+          });
         }
 
         return res.status(201).json(newLog);

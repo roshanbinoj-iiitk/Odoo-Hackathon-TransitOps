@@ -52,6 +52,18 @@ export default function Drivers() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [sortBy, setSortBy] = useState("newest");
+  const [user, setUser] = useState<{name: string; role: string} | null>(null);
+
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {}
+    }
+  }, []);
+
+  const canManage = user?.role === 'FLEET_MANAGER';
   
   const queryUrl = `/api/drivers?search=${encodeURIComponent(search)}&status=${statusFilter}&sort=${sortBy}`;
   const { data: drivers, mutate, error } = useSWR(queryUrl, fetcher);
@@ -166,65 +178,67 @@ export default function Drivers() {
             <h1 className="text-3xl font-bold tracking-tight">Driver Directory</h1>
             <p className="text-muted-foreground">Manage your driving staff and monitor safety scores.</p>
           </div>
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger>
-              <div onClick={() => setFormData({ name: "", licenseNumber: "", licenseCategory: "", licenseExpiry: "", contactNumber: "", safetyScore: 100, status: "AVAILABLE" })} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
-                <Plus className="mr-2 h-4 w-4" /> Add Driver
-              </div>
-            </DialogTrigger>
-            <DialogContent>
-              <form onSubmit={handleSave}>
-                <DialogHeader>
-                  <DialogTitle>Add New Driver</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Full Name</label>
-                      <Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Contact Number</label>
-                      <Input required placeholder="+91XXXXXXXXXX" value={formData.contactNumber} onChange={e => setFormData({...formData, contactNumber: e.target.value})} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">License Number</label>
-                      <Input required placeholder="MH1420210009823" value={formData.licenseNumber} onChange={e => setFormData({...formData, licenseNumber: e.target.value})} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">License Category</label>
-                      <Input required placeholder="LMV, HMV" value={formData.licenseCategory} onChange={e => setFormData({...formData, licenseCategory: e.target.value})} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">License Expiry</label>
-                      <Input type="date" required value={formData.licenseExpiry} onChange={e => setFormData({...formData, licenseExpiry: e.target.value})} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Safety Score</label>
-                      <Input type="number" step="0.1" min="0" max="100" value={formData.safetyScore} onChange={e => setFormData({...formData, safetyScore: parseFloat(e.target.value)})} />
-                    </div>
-                    <div className="space-y-2 col-span-2">
-                      <label className="text-sm font-medium">Status</label>
-                      <Select value={formData.status} onValueChange={v => setFormData({...formData, status: v as string})}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="AVAILABLE">AVAILABLE</SelectItem>
-                          <SelectItem value="ON_TRIP">ON_TRIP</SelectItem>
-                          <SelectItem value="OFF_DUTY">OFF_DUTY</SelectItem>
-                          <SelectItem value="SUSPENDED">SUSPENDED</SelectItem>
-                        </SelectContent>
-                      </Select>
+          {canManage && (
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+              <DialogTrigger>
+                <div onClick={() => setFormData({ name: "", licenseNumber: "", licenseCategory: "", licenseExpiry: "", contactNumber: "", safetyScore: 100, status: "AVAILABLE" })} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                  <Plus className="mr-2 h-4 w-4" /> Add Driver
+                </div>
+              </DialogTrigger>
+              <DialogContent>
+                <form onSubmit={handleSave}>
+                  <DialogHeader>
+                    <DialogTitle>Add New Driver</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Full Name</label>
+                        <Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Contact Number</label>
+                        <Input required placeholder="+91XXXXXXXXXX" value={formData.contactNumber} onChange={e => setFormData({...formData, contactNumber: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">License Number</label>
+                        <Input required placeholder="MH1420210009823" value={formData.licenseNumber} onChange={e => setFormData({...formData, licenseNumber: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">License Category</label>
+                        <Input required placeholder="LMV, HMV" value={formData.licenseCategory} onChange={e => setFormData({...formData, licenseCategory: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">License Expiry</label>
+                        <Input type="date" required value={formData.licenseExpiry} onChange={e => setFormData({...formData, licenseExpiry: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Safety Score</label>
+                        <Input type="number" step="0.1" min="0" max="100" value={formData.safetyScore} onChange={e => setFormData({...formData, safetyScore: parseFloat(e.target.value)})} />
+                      </div>
+                      <div className="space-y-2 col-span-2">
+                        <label className="text-sm font-medium">Status</label>
+                        <Select value={formData.status} onValueChange={v => setFormData({...formData, status: v as string})}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="AVAILABLE">AVAILABLE</SelectItem>
+                            <SelectItem value="ON_TRIP">ON_TRIP</SelectItem>
+                            <SelectItem value="OFF_DUTY">OFF_DUTY</SelectItem>
+                            <SelectItem value="SUSPENDED">SUSPENDED</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <DialogFooter>
-                  <Button type="submit">Save</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <DialogFooter>
+                    <Button type="submit">Save</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-5">
@@ -339,8 +353,12 @@ export default function Drivers() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleOpenView(driver)}>View Profile</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleOpenEdit(driver)}>Edit Driver</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDelete(driver)}>Delete Driver</DropdownMenuItem>
+                        {canManage && (
+                          <>
+                            <DropdownMenuItem onClick={() => handleOpenEdit(driver)}>Edit Driver</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDelete(driver)}>Delete Driver</DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
