@@ -28,7 +28,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm<LoginFormValues>({
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
@@ -205,7 +205,7 @@ export default function Login() {
 
                   <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
-                    <Select onValueChange={(val) => val && setValue("role", val as string)}>
+                    <Select value={watch("role")} onValueChange={(val) => val && setValue("role", val as string)}>
                       <SelectTrigger className={errors.role ? "border-destructive focus-visible:ring-destructive" : ""}>
                         <SelectValue placeholder="Select your role" />
                       </SelectTrigger>

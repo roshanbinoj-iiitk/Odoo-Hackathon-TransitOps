@@ -7,22 +7,26 @@ import Layout from "@/components/layout/Layout";
 
 const inter = Inter({ subsets: ["latin"] });
 
+import { ThemeProvider } from "next-themes";
+
 export default function App({ Component, pageProps, router }: AppProps) {
   // Do not use the layout for the login page
   const isLoginPage = router.pathname === "/login";
 
   return (
-    <div className={`${inter.className} min-h-screen bg-background font-sans antialiased`}>
-      <TooltipProvider>
-        {isLoginPage ? (
-          <Component {...pageProps} />
-        ) : (
-          <Layout>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <div className={`${inter.className} min-h-screen bg-background font-sans antialiased text-foreground`}>
+        <TooltipProvider>
+          {isLoginPage ? (
             <Component {...pageProps} />
-          </Layout>
-        )}
-        <Toaster />
-      </TooltipProvider>
-    </div>
+          ) : (
+            <Layout>
+              <Component {...pageProps} />
+            </Layout>
+          )}
+          <Toaster />
+        </TooltipProvider>
+      </div>
+    </ThemeProvider>
   );
 }

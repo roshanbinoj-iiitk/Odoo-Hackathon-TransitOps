@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { ModeToggle } from "@/components/mode-toggle";
 
 export default function TopNav() {
   const [user, setUser] = useState<{name: string; role: string} | null>(null);
@@ -42,7 +43,8 @@ export default function TopNav() {
       </div>
 
       {/* Right section - Notifications & Profile */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
+        <ModeToggle />
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="w-5 h-5 text-muted-foreground" />
           <span className="absolute top-1.5 right-2 w-2 h-2 bg-primary rounded-full"></span>
