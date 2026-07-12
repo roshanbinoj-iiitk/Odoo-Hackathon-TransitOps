@@ -41,11 +41,14 @@ model Vehicle {
   model        String
   year         Int
   type         String
-  status       VehicleStatus    @default(AVAILABLE)
-  mileage      Float
-  lastService  DateTime?
-  healthScore  Float
-  trips        Trip[]
+  status          VehicleStatus    @default(AVAILABLE)
+  mileage         Float
+  capacity        Int              @default(0)
+  acquisitionCost Int              @default(0)
+  region          String           @default("Maharashtra")
+  lastService     DateTime?
+  healthScore     Float
+  trips           Trip[]
   maintenance  MaintenanceLog[]
   fuelLogs     FuelLog[]
   createdAt    DateTime         @default(now())

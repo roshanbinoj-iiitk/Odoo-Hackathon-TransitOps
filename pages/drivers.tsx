@@ -1,7 +1,8 @@
 import React from "react";
 import Head from "next/head";
 import { Plus, Search, MoreVertical, ShieldAlert } from "lucide-react";
-import { mockDrivers } from "@/data/mock";
+import useSWR from "swr";
+const fetcher = (url: string) => fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(res => res.json());
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function Drivers() {
+  const { data: drivers } = useSWR('/api/drivers', fetcher);
+  const displayDrivers = drivers || [];
   return (
     <>
       <Head>
@@ -38,8 +41,8 @@ export default function Drivers() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockDrivers.map((driver) => (
-            <Card key={driver.id} className={`overflow-hidden ${driver.status === 'Suspended' ? 'border-destructive/50' : ''}`}>
+          {displayDrivers.map((driver: any) => (
+            <Card key={driver.id} className={`overflow-hidden ${driver.status === 'SUSPENDED' ? 'border-destructive/50' : ''}`}>
               <CardContent className="p-0">
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
@@ -88,9 +91,9 @@ export default function Drivers() {
                       <Badge 
                         variant="secondary"
                         className={
-                          driver.status === "Available" ? "bg-success/10 text-success" :
-                          driver.status === "On Trip" ? "bg-info/10 text-info" :
-                          driver.status === "Suspended" ? "bg-destructive/10 text-destructive" :
+                          driver.status === "AVAILABLE" ? "bg-success/10 text-success" :
+                          driver.status === "ON_TRIP" ? "bg-info/10 text-info" :
+                          driver.status === "SUSPENDED" ? "bg-destructive/10 text-destructive" :
                           "bg-muted text-muted-foreground"
                         }
                       >
@@ -99,7 +102,7 @@ export default function Drivers() {
                     </div>
                   </div>
                 </div>
-                {driver.status === 'Suspended' && (
+                {driver.status === 'SUSPENDED' && (
                   <div className="bg-destructive/10 px-6 py-3 border-t border-destructive/20">
                     <p className="text-xs font-medium text-destructive flex items-center gap-2">
                       <ShieldAlert className="h-4 w-4" /> Action Required: License Review

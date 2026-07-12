@@ -16,7 +16,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else if (req.method === 'POST') {
       try {
         const data = req.body;
-        // Validate registration
+        // Validate registration format (Indian)
+        const regRegex = /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/i;
+        if (!regRegex.test(data.registration.replace(/\s+/g, ''))) {
+          return res.status(400).json({ message: 'Invalid Indian registration number format' });
+        }
+
         const existing = await prisma.vehicle.findUnique({ where: { registration: data.registration } });
         if (existing) {
           return res.status(400).json({ message: 'Vehicle registration must be unique.' });
@@ -32,6 +37,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             status: data.status || 'AVAILABLE',
             mileage: Number(data.mileage || 0),
             healthScore: Number(data.healthScore || 100),
+            capacity: Number(data.capacity || 0),
+            acquisitionCost: Number(data.acquisitionCost || 0),
+            region: data.region || 'Maharashtra',
           }
         });
         return res.status(201).json(newVehicle);

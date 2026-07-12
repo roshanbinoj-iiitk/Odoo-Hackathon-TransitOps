@@ -25,7 +25,8 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { mockVehicles, mockDrivers, mockTrips } from "@/data/mock";
+import useSWR from "swr";
+const fetcher = (url: string) => fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(res => res.json());
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
@@ -60,20 +61,58 @@ export default function Trips() {
     }
   });
 
+  const { data: vehiclesData } = useSWR('/api/vehicles', fetcher);
+  const { data: driversData } = useSWR('/api/drivers', fetcher);
+  const { data: tripsData, mutate: mutateTrips } = useSWR('/api/trips', fetcher);
+
+  const vehicles = vehiclesData || [];
+  const drivers = driversData || [];
+  const trips = tripsData || [];
+
   const onSubmit = async (data: TripFormValues) => {
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    try {
+      const scheduledDeparture = data.date.toISOString();
+      const estimatedArrival = new Date(data.date.getTime() + 24 * 60 * 60 * 1000).toISOString();
+      
+      const res = await fetch('/api/trips', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          source: data.source,
+          destination: data.destination,
+          vehicleId: data.vehicleId,
+          driverId: data.driverId,
+          cargo: data.cargo,
+          weight: data.weight,
+          distance: 150, // mock distance
+          scheduledDeparture,
+          estimatedArrival
+        })
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        toast.error("Dispatch failed", { description: result.message || "Failed to create trip" });
+      } else {
+        toast.success("Trip Dispatched", {
+          description: `Successfully dispatched trip from ${data.source} to ${data.destination}.`
+        });
+        form.reset();
+        mutateTrips();
+      }
+    } catch (error) {
+      toast.error("Error", { description: "Something went wrong" });
+    }
+    
     setIsSubmitting(false);
-    
-    toast.success("Trip Dispatched", {
-      description: `Successfully dispatched trip from ${data.source} to ${data.destination}.`
-    });
-    
-    form.reset();
   };
 
-  const activeTrips = mockTrips.filter(t => t.status === "Dispatched" || t.status === "Assigned").slice(0, 5);
+  const activeTrips = trips.filter((t: any) => t.status === "DISPATCHED" || t.status === "ASSIGNED" || t.status === "DRAFT").slice(0, 5);
 
   return (
     <>
@@ -126,7 +165,7 @@ export default function Trips() {
                         <SelectValue placeholder="Select vehicle" />
                       </SelectTrigger>
                       <SelectContent>
-                        {mockVehicles.filter(v => v.status === "Available").map(v => (
+                        {vehicles.filter((v: any) => v.status === "AVAILABLE").map((v: any) => (
                           <SelectItem key={v.id} value={v.id}>{v.registration} ({v.type})</SelectItem>
                         ))}
                       </SelectContent>
@@ -141,7 +180,7 @@ export default function Trips() {
                         <SelectValue placeholder="Select driver" />
                       </SelectTrigger>
                       <SelectContent>
-                        {mockDrivers.filter(d => d.status === "Available").map(d => (
+                        {drivers.filter((d: any) => d.status === "AVAILABLE").map((d: any) => (
                           <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -210,7 +249,7 @@ export default function Trips() {
               <CardDescription>Real-time tracking of active operations.</CardDescription>
             </CardHeader>
             <div className="overflow-y-auto flex-1 p-6 space-y-6">
-              {activeTrips.map((trip) => (
+              {activeTrips.map((trip: any) => (
                 <div key={trip.id} className="bg-card p-4 rounded-xl border border-border shadow-sm relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-info"></div>
                   
@@ -228,23 +267,23 @@ export default function Trips() {
                     <div className="relative pl-6 pb-4 border-l-2 border-muted">
                       <div className="absolute w-3 h-3 bg-card border-2 border-primary rounded-full -left-[7px] top-1"></div>
                       <p className="text-sm font-medium">{trip.source}</p>
-                      <p className="text-xs text-muted-foreground">Dep: {trip.scheduledDeparture}</p>
+                      <p className="text-xs text-muted-foreground">Dep: {new Date(trip.scheduledDeparture).toLocaleDateString()}</p>
                     </div>
                     <div className="relative pl-6">
                       <div className="absolute w-3 h-3 bg-muted border-2 border-muted-foreground rounded-full -left-[7px] top-1"></div>
                       <p className="text-sm font-medium">{trip.destination}</p>
-                      <p className="text-xs text-muted-foreground">ETA: {trip.estimatedArrival}</p>
+                      <p className="text-xs text-muted-foreground">ETA: {new Date(trip.estimatedArrival).toLocaleDateString()}</p>
                     </div>
                   </div>
                   
                   <div className="flex items-center justify-between pl-2 pt-4 border-t border-border">
                     <div className="flex items-center gap-2">
                       <Truck className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-xs font-medium">{trip.vehicleId}</span>
+                      <span className="text-xs font-medium">{trip.vehicle?.registration || trip.vehicleId}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-xs font-medium">Assigned Driver</span>
+                      <span className="text-xs font-medium">{trip.driver?.name || "Assigned Driver"}</span>
                     </div>
                   </div>
                 </div>
