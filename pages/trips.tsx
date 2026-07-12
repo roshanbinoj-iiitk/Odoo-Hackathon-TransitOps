@@ -14,8 +14,10 @@ import {
   Truck,
   Users,
   Check,
-  ChevronsUpDown
+  ChevronsUpDown,
+  Download
 } from "lucide-react";
+import { exportToPDF } from "@/utils/pdfExport";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -170,6 +172,23 @@ export default function Trips() {
   const activeTrips = trips.filter((t: any) => t.status === "DISPATCHED" || t.status === "ASSIGNED" || t.status === "DRAFT").slice(0, 5);
   const pastTrips = trips.filter((t: any) => t.status === "COMPLETED" || t.status === "CANCELLED").slice(0, 10);
 
+  const handleExportPDF = () => {
+    if (!trips || trips.length === 0) return;
+    exportToPDF({
+      title: "Trips Directory",
+      filename: "trips_directory.pdf",
+      headers: ['Source', 'Destination', 'Vehicle', 'Driver', 'Status', 'Date'],
+      data: trips.map((t: any) => [
+        t.source,
+        t.destination,
+        t.vehicle?.registration || "Unassigned",
+        t.driver?.name || "Unassigned",
+        t.status,
+        new Date(t.scheduledDate || t.createdAt).toLocaleDateString()
+      ])
+    });
+  };
+
   return (
     <>
       <Head>
@@ -177,9 +196,14 @@ export default function Trips() {
       </Head>
       
       <div className="space-y-6 h-[calc(100vh-140px)] flex flex-col">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Trips & Dispatch</h1>
-          <p className="text-muted-foreground">Create new trips and monitor active dispatch operations.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Trips & Dispatch</h1>
+            <p className="text-muted-foreground">Create new trips and monitor active dispatch operations.</p>
+          </div>
+          <Button variant="outline" onClick={handleExportPDF}>
+            <Download className="mr-2 h-4 w-4" /> Export PDF
+          </Button>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6 flex-1 min-h-0">

@@ -1,6 +1,7 @@
 import React from "react";
 import Head from "next/head";
-import { Wrench, CheckCircle2, Clock, Check, ChevronsUpDown, ArrowRightCircle } from "lucide-react";
+import { Wrench, CheckCircle2, Clock, Check, ChevronsUpDown, ArrowRightCircle, Download } from "lucide-react";
+import { exportToPDF } from "@/utils/pdfExport";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,6 +93,23 @@ export default function Maintenance() {
       console.error(error);
       toast.error("Failed to update status.");
     }
+  };
+
+  const handleExportPDF = () => {
+    if (!logs || logs.length === 0) return;
+    exportToPDF({
+      title: "Maintenance Logs",
+      filename: "maintenance_logs.pdf",
+      headers: ['Vehicle', 'Service', 'Date', 'Cost', 'Technician', 'Status'],
+      data: logs.map((log: any) => [
+        log.vehicle?.registration || log.vehicleId,
+        log.service,
+        new Date(log.date).toLocaleDateString(),
+        `₹${log.cost}`,
+        log.technician || "N/A",
+        log.status
+      ])
+    });
   };
 
   return (
@@ -206,7 +224,9 @@ export default function Maintenance() {
                 <CardTitle>Service History</CardTitle>
                 <CardDescription>Recent maintenance logs across the fleet.</CardDescription>
               </div>
-              <Button variant="outline" size="sm">Export Logs</Button>
+              <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                <Download className="mr-2 h-4 w-4" /> Export PDF
+              </Button>
             </CardHeader>
             <div className="overflow-y-auto flex-1 p-6">
               <div className="relative border-l-2 border-muted ml-3 space-y-8 pb-4">

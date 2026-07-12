@@ -31,8 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import { exportToPDF } from "@/utils/pdfExport";
 import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(res => res.json());
@@ -82,17 +81,16 @@ export default function Dashboard() {
   };
 
   const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.text("Dashboard Report", 14, 15);
-    autoTable(doc, {
-      head: [['Metric', 'Value']],
-      body: [
+    exportToPDF({
+      title: "Dashboard Report",
+      filename: "dashboard_report.pdf",
+      headers: ['Metric', 'Value'],
+      data: [
         ['Active Vehicles', String((dashboardData?.activeVehicles || 0) + (dashboardData?.availableVehicles || 0))],
         ['Active Trips', String(dashboardData?.activeTrips || 0)],
         ['Vehicles in Shop', String(dashboardData?.maintenanceVehicles || 0)],
-      ],
+      ]
     });
-    doc.save('dashboard_report.pdf');
   };
 
   return (

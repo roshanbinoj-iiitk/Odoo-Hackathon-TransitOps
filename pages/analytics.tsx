@@ -14,6 +14,13 @@ import {
   ComposedChart
 } from "recharts";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { exportToPDF } from "@/utils/pdfExport";
 import { Download, TrendingUp, Activity, DollarSign, Percent } from "lucide-react";
 import useSWR from "swr";
 
@@ -69,6 +76,25 @@ export default function Analytics() {
     document.body.removeChild(link);
   };
 
+  const handleExportPDF = () => {
+    if (!reports.length) return;
+    exportToPDF({
+      title: "Analytics Report",
+      filename: "analytics_report.pdf",
+      headers: ['Vehicle', 'Total Distance', 'Fuel Efficiency', 'Fuel Cost', 'Maint. Cost', 'Op. Cost', 'Revenue', 'ROI'],
+      data: reports.map((r: any) => [
+        r.registration,
+        String(r.totalDistance || 0),
+        String(r.fuelEfficiency || 0),
+        `₹${r.fuelCost || 0}`,
+        `₹${r.maintenanceCost || 0}`,
+        `₹${r.operationalCost || 0}`,
+        `₹${r.revenue || 0}`,
+        `${r.roi || 0}%`
+      ])
+    });
+  };
+
   return (
     <>
       <Head>
@@ -81,9 +107,17 @@ export default function Analytics() {
             <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
             <p className="text-muted-foreground">Comprehensive insights into fleet performance and costs.</p>
           </div>
-          <Button onClick={handleExportCSV}>
-            <Download className="mr-2 h-4 w-4" /> Export CSV
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                <Download className="mr-2 h-4 w-4" /> Export Report
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportCSV}>Export as CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF}>Export as PDF</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">

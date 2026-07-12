@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Head from "next/head";
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
+import { exportToPDF } from "@/utils/pdfExport";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
@@ -119,6 +120,22 @@ export default function FuelExpenses() {
 
   const tripExpenses = Object.values(tripExpensesMap);
 
+  const handleExportPDF = () => {
+    if (!fuelLogs || fuelLogs.length === 0) return;
+    exportToPDF({
+      title: "Fuel Logs",
+      filename: "fuel_logs.pdf",
+      headers: ['Vehicle', 'Date', 'Liters', 'Cost', 'Location'],
+      data: fuelLogs.map((log: any) => [
+        log.vehicle?.registration || log.vehicleId,
+        new Date(log.date).toLocaleString(),
+        String(log.liters),
+        `₹${log.cost}`,
+        log.location
+      ])
+    });
+  };
+
   return (
     <>
       <Head>
@@ -132,6 +149,9 @@ export default function FuelExpenses() {
             <p className="text-muted-foreground">Financial overview of fleet operations.</p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExportPDF}>
+              <Download className="mr-2 h-4 w-4" /> Export PDF
+            </Button>
             
             <Dialog open={fuelOpen} onOpenChange={setFuelOpen}>
               <DialogTrigger render={<Button variant="default" />}>

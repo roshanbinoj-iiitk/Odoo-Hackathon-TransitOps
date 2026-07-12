@@ -10,8 +10,9 @@ import {
   ColumnDef,
   SortingState
 } from "@tanstack/react-table";
-import { Plus, Search, SlidersHorizontal, ChevronDown, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, SlidersHorizontal, ChevronDown, MoreHorizontal, Pencil, Trash2, Download } from "lucide-react";
 import useSWR, { mutate } from "swr";
+import { exportToPDF } from "@/utils/pdfExport";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -340,6 +341,22 @@ export default function Fleet() {
     }
   });
 
+  const handleExportPDF = () => {
+    if (!vehicles || vehicles.length === 0) return;
+    exportToPDF({
+      title: "Fleet Registry",
+      filename: "fleet_registry.pdf",
+      headers: ['Registration', 'Make & Model', 'Type', 'State', 'Status'],
+      data: vehicles.map((v: any) => [
+        v.registration,
+        `${v.make} ${v.model}`,
+        v.type,
+        v.region,
+        v.status
+      ])
+    });
+  };
+
   return (
     <>
       <Head>
@@ -352,11 +369,16 @@ export default function Fleet() {
             <h1 className="text-3xl font-bold tracking-tight">Vehicle Registry</h1>
             <p className="text-muted-foreground">Manage and track your entire fleet.</p>
           </div>
-          {user?.role === 'FLEET_MANAGER' && (
-            <Button onClick={handleOpenAddDialog}>
-              <Plus className="mr-2 h-4 w-4" /> Add Vehicle
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleExportPDF}>
+              <Download className="mr-2 h-4 w-4" /> Export PDF
             </Button>
-          )}
+            {user?.role === 'FLEET_MANAGER' && (
+              <Button onClick={handleOpenAddDialog}>
+                <Plus className="mr-2 h-4 w-4" /> Add Vehicle
+              </Button>
+            )}
+          </div>
         </div>
 
         <Card className="p-0 border-0 shadow-sm sm:border sm:p-1 overflow-hidden bg-card">
