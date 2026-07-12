@@ -34,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         
         // Assume Acquisition cost is fixed or random for demo purposes unless added to model.
         // Let's use a fixed 1,500,000 INR (15 Lakhs) for ROI calculation.
-        const acquisitionCost = 1500000;
+        const acquisitionCost = vehicle.acquisitionCost || 1500000;
         const roi = ((revenue - operationalCost) / acquisitionCost) * 100;
 
         return {

@@ -13,6 +13,14 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(res => res.json());
@@ -45,6 +53,35 @@ export default function Dashboard() {
     { name: "Sun", total: 8100 },
   ];
 
+  const exportCSV = () => {
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      "Metric,Value\n" +
+      `Active Vehicles,${dashboardData?.activeVehicles + dashboardData?.availableVehicles || 0}\n` +
+      `Active Trips,${dashboardData?.activeTrips || 0}\n` +
+      `Vehicles in Shop,${dashboardData?.maintenanceVehicles || 0}\n`;
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "dashboard_report.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Dashboard Report", 14, 15);
+    autoTable(doc, {
+      head: [['Metric', 'Value']],
+      body: [
+        ['Active Vehicles', String((dashboardData?.activeVehicles || 0) + (dashboardData?.availableVehicles || 0))],
+        ['Active Trips', String(dashboardData?.activeTrips || 0)],
+        ['Vehicles in Shop', String(dashboardData?.maintenanceVehicles || 0)],
+      ],
+    });
+    doc.save('dashboard_report.pdf');
+  };
+
   return (
     <>
       <Head>
@@ -58,7 +95,15 @@ export default function Dashboard() {
             <p className="text-muted-foreground">Welcome back, here's what's happening with your fleet today.</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline">Download Report</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">Download Report</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={exportCSV}>Download CSV</DropdownMenuItem>
+                <DropdownMenuItem onClick={exportPDF}>Download PDF</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button>New Dispatch</Button>
           </div>
         </div>
@@ -159,7 +204,7 @@ export default function Dashboard() {
                       fontSize={12} 
                       tickLine={false} 
                       axisLine={false} 
-                      tickFormatter={(value) => `$${value}`} 
+                      tickFormatter={(value) => `₹${value}`} 
                     />
                     <RechartsTooltip 
                       cursor={{ fill: 'transparent' }}

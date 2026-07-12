@@ -2,7 +2,7 @@ import React from "react";
 import Head from "next/head";
 import { 
   Fuel, 
-  DollarSign, 
+  IndianRupee, 
   Wrench, 
   TrendingDown, 
   TrendingUp,
@@ -10,6 +10,14 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import useSWR from "swr";
 const fetcher = (url: string) => fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(res => res.json());
 import { 
@@ -52,6 +60,37 @@ export default function FuelExpenses() {
   const totalFuelCost = fuelLogs.reduce((acc: number, log: any) => acc + (log.cost || 0), 0);
   const totalGallons = fuelLogs.reduce((acc: number, log: any) => acc + (log.gallons || 0), 0);
 
+  const exportCSV = () => {
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      "Date,Vehicle,Location,Liters,Cost\n" +
+      fuelLogs.map((log: any) => 
+        `${new Date(log.date).toLocaleDateString()},${log.vehicle?.registration || log.vehicleId},"${log.location}",${log.gallons},${log.cost}`
+      ).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "fuel_expenses_report.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Fuel & Expenses Report", 14, 15);
+    autoTable(doc, {
+      head: [['Date', 'Vehicle', 'Location', 'Liters', 'Cost (INR)']],
+      body: fuelLogs.map((log: any) => [
+        new Date(log.date).toLocaleDateString(),
+        log.vehicle?.registration || log.vehicleId,
+        log.location,
+        String(log.gallons),
+        String(log.cost)
+      ]),
+    });
+    doc.save('fuel_expenses_report.pdf');
+  };
+
   return (
     <>
       <Head>
@@ -64,9 +103,17 @@ export default function FuelExpenses() {
             <h1 className="text-3xl font-bold tracking-tight">Fuel & Expenses</h1>
             <p className="text-muted-foreground">Financial overview of fleet operations.</p>
           </div>
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" /> Export Report
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="mr-2 h-4 w-4" /> Export Report
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={exportCSV}>Download CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={exportPDF}>Download PDF</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -76,7 +123,7 @@ export default function FuelExpenses() {
               <Fuel className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${totalFuelCost.toLocaleString()}</div>
+              <div className="text-2xl font-bold">₹{totalFuelCost.toLocaleString()}</div>
               <p className="text-xs flex items-center mt-1 text-destructive">
                 <TrendingUp className="h-3 w-3 mr-1" />
                 +4.5% vs last month
@@ -90,7 +137,7 @@ export default function FuelExpenses() {
               <Fuel className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalGallons.toLocaleString()} gal</div>
+              <div className="text-2xl font-bold">{totalGallons.toLocaleString()} L</div>
               <p className="text-xs flex items-center mt-1 text-success">
                 <TrendingDown className="h-3 w-3 mr-1" />
                 -2.1% efficiency improved
@@ -104,7 +151,7 @@ export default function FuelExpenses() {
               <Wrench className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$34,250</div>
+              <div className="text-2xl font-bold">₹34,250</div>
               <p className="text-xs flex items-center mt-1 text-success">
                 <TrendingDown className="h-3 w-3 mr-1" />
                 -12% vs last month
@@ -114,14 +161,14 @@ export default function FuelExpenses() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Cost per Mile</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Cost per Km</CardTitle>
+              <IndianRupee className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$1.84</div>
+              <div className="text-2xl font-bold">₹1.84</div>
               <p className="text-xs flex items-center mt-1 text-destructive">
                 <TrendingUp className="h-3 w-3 mr-1" />
-                +$0.12 vs avg
+                +₹0.12 vs avg
               </p>
             </CardContent>
           </Card>
@@ -138,7 +185,7 @@ export default function FuelExpenses() {
                   <AreaChart data={monthlyCosts}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                     <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
                     <Tooltip cursor={{ stroke: 'var(--border)' }} contentStyle={{ borderRadius: '10px' }} />
                     <Area type="monotone" dataKey="fuel" stackId="1" stroke="var(--primary)" fill="var(--primary)" fillOpacity={0.8} />
                     <Area type="monotone" dataKey="maintenance" stackId="1" stroke="var(--chart-2)" fill="var(--chart-2)" fillOpacity={0.8} />
@@ -196,7 +243,7 @@ export default function FuelExpenses() {
                     <th className="px-4 py-3 rounded-tl-lg">Date</th>
                     <th className="px-4 py-3">Vehicle</th>
                     <th className="px-4 py-3">Location</th>
-                    <th className="px-4 py-3">Gallons</th>
+                    <th className="px-4 py-3">Liters</th>
                     <th className="px-4 py-3 rounded-tr-lg">Total Cost</th>
                   </tr>
                 </thead>
@@ -207,7 +254,7 @@ export default function FuelExpenses() {
                       <td className="px-4 py-3 text-primary">{log.vehicle?.registration || log.vehicleId}</td>
                       <td className="px-4 py-3">{log.location}</td>
                       <td className="px-4 py-3">{log.gallons}</td>
-                      <td className="px-4 py-3 font-medium">${log.cost}</td>
+                      <td className="px-4 py-3 font-medium">₹{log.cost}</td>
                     </tr>
                   ))}
                 </tbody>

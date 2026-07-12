@@ -215,7 +215,7 @@ export default function Trips() {
                     </div>
 
                     <div className="space-y-2 col-span-2 sm:col-span-1">
-                      <Label>Weight (lbs)</Label>
+                      <Label>Weight (kg)</Label>
                       <Input type="number" placeholder="40000" {...form.register("weight")} />
                       {form.formState.errors.weight && <p className="text-sm text-destructive">{form.formState.errors.weight.message}</p>}
                     </div>

@@ -62,12 +62,12 @@ export default function Settings() {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>Distance Unit</Label>
-                    <p className="text-sm text-muted-foreground">Use miles or kilometers across the platform.</p>
+                    <p className="text-sm text-muted-foreground">Use kilometers across the platform.</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Label className="font-normal text-muted-foreground">km</Label>
-                    <Switch defaultChecked />
-                    <Label className="font-normal">mi</Label>
+                    <Label className="font-normal">km</Label>
+                    <Switch />
+                    <Label className="font-normal text-muted-foreground">mi</Label>
                   </div>
                 </div>
                 <Separator />
@@ -77,6 +77,7 @@ export default function Settings() {
                     <p className="text-sm text-muted-foreground">Default currency for all financial records.</p>
                   </div>
                   <select className="flex h-10 w-[120px] items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                    <option value="inr">INR (₹)</option>
                     <option value="usd">USD ($)</option>
                     <option value="eur">EUR (€)</option>
                     <option value="gbp">GBP (£)</option>

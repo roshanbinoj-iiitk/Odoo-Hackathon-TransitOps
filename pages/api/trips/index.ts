@@ -35,20 +35,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (driver.status === 'ON_TRIP') return res.status(400).json({ message: 'Driver already On Trip cannot be reused' });
         if (new Date(driver.licenseExpiry) < new Date()) return res.status(400).json({ message: 'Expired license cannot be assigned' });
 
-        const newTrip = await prisma.trip.create({
-          data: {
-            source: data.source,
-            destination: data.destination,
-            vehicleId: data.vehicleId,
-            driverId: data.driverId,
-            cargo: data.cargo,
-            distance: Number(data.distance),
-            weight: Number(data.weight),
-            status: 'DRAFT',
-            scheduledDeparture: new Date(data.scheduledDeparture),
-            estimatedArrival: new Date(data.estimatedArrival),
-          }
-        });
+        const [newTrip] = await prisma.$transaction([
+          prisma.trip.create({
+            data: {
+              source: data.source,
+              destination: data.destination,
+              vehicleId: data.vehicleId,
+              driverId: data.driverId,
+              cargo: data.cargo,
+              distance: Number(data.distance),
+              weight: Number(data.weight),
+              status: 'DISPATCHED',
+              scheduledDeparture: new Date(data.scheduledDeparture),
+              estimatedArrival: new Date(data.estimatedArrival),
+              actualDeparture: new Date(),
+            }
+          }),
+          prisma.vehicle.update({
+            where: { id: data.vehicleId },
+            data: { status: 'ON_TRIP' }
+          }),
+          prisma.driver.update({
+            where: { id: data.driverId },
+            data: { status: 'ON_TRIP' }
+          })
+        ]);
         return res.status(201).json(newTrip);
       } catch (error) {
         console.error('Create trip error:', error);

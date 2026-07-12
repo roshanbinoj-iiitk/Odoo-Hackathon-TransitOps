@@ -43,7 +43,7 @@ export default function Maintenance() {
               </div>
               <div className="space-y-2">
                 <Label>Estimated Cost</Label>
-                <Input type="number" placeholder="$0.00" />
+                <Input type="number" placeholder="₹0.00" />
               </div>
               <div className="space-y-2">
                 <Label>Date</Label>
@@ -86,7 +86,7 @@ export default function Maintenance() {
                           <p className="text-sm text-primary font-medium">{log.vehicleId}</p>
                         </div>
                         <div className="text-right">
-                          <span className="text-sm font-semibold">${log.cost}</span>
+                          <span className="text-sm font-semibold">₹{log.cost}</span>
                           <p className="text-xs text-muted-foreground">{log.date}</p>
                         </div>
                       </div>

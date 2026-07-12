@@ -74,8 +74,8 @@ export default function Analytics() {
                   <ComposedChart data={roiData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val/1000}k`} />
-                    <Tooltip contentStyle={{ borderRadius: '10px' }} formatter={(val) => `$${(val as number).toLocaleString()}`} />
+                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val/1000}k`} />
+                    <Tooltip contentStyle={{ borderRadius: '10px' }} formatter={(val) => `₹${(val as number).toLocaleString()}`} />
                     <Bar dataKey="cost" fill="var(--chart-2)" radius={[4, 4, 0, 0]} barSize={40} />
                     <Line type="monotone" dataKey="revenue" stroke="var(--primary)" strokeWidth={3} />
                   </ComposedChart>
