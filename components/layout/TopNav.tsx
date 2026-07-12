@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Search, Bell, Menu } from "lucide-react";
+import { Search, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -45,10 +45,6 @@ export default function TopNav() {
       {/* Right section - Notifications & Profile */}
       <div className="flex items-center gap-2 md:gap-4">
         <ModeToggle />
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="w-5 h-5 text-muted-foreground" />
-          <span className="absolute top-1.5 right-2 w-2 h-2 bg-primary rounded-full"></span>
-        </Button>
 
         <div className="h-6 w-px bg-border mx-1 hidden sm:block"></div>
         

@@ -13,7 +13,7 @@ import {
   Line,
   ComposedChart
 } from "recharts";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -108,10 +108,8 @@ export default function Analytics() {
             <p className="text-muted-foreground">Comprehensive insights into fleet performance and costs.</p>
           </div>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button>
-                <Download className="mr-2 h-4 w-4" /> Export Report
-              </Button>
+            <DropdownMenuTrigger className={buttonVariants({ variant: "default" })}>
+              <Download className="mr-2 h-4 w-4" /> Export Report
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handleExportCSV}>Export as CSV</DropdownMenuItem>
