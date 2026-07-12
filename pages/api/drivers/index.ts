@@ -16,7 +16,7 @@ const createDriverSchema = z.object({
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   return requireAuth(async (req, res, user) => {
     if (req.method === 'GET') {
-      if (!['FLEET_MANAGER', 'SAFETY_OFFICER'].includes(user.role)) {
+      if (!['FLEET_MANAGER', 'SAFETY_OFFICER', 'DISPATCHER'].includes(user.role)) {
         return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
       }
       try {
@@ -90,8 +90,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           licenseCategory: data.licenseCategory,
           avatar: null
         });
-      } catch (error) {
-        return res.status(500).json({ message: 'Failed to save driver.' });
+      } catch (error: any) {
+        console.error('Driver creation error:', error);
+        return res.status(500).json({ message: error.message || 'Failed to save driver.' });
       }
     } else {
       res.status(405).json({ message: 'Method Not Allowed' });

@@ -37,8 +37,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
         });
         return res.status(201).json(newExpense);
-      } catch (error) {
-        return res.status(500).json({ message: 'Internal server error' });
+      } catch (error: any) {
+        console.error('Expense error:', error);
+        return res.status(500).json({ message: error.message || 'Internal server error' });
       }
     } else {
       res.status(405).json({ message: 'Method Not Allowed' });
