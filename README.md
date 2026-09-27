@@ -186,6 +186,7 @@ You can use the following default credentials to log in and test different RBAC 
 
 | Role | Email | Password |
 | :--- | :--- | :--- |
+| **Admin** | `admin@transitops.in` | `rbss2005@` |
 | **Fleet Manager** | `manager@transitops.in` | `password123` |
 | **Dispatcher** | `dispatcher@transitops.in` | `password123` |
 | **Safety Officer** | `safety@transitops.in` | `password123` |
