@@ -5,13 +5,13 @@ import { requireAuth } from '../../../lib/auth';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   return requireAuth(async (req, res, user) => {
     if (req.method === 'GET') {
-      if (!['FINANCIAL_ANALYST'].includes(user.role)) {
+      if (!['FINANCIAL_ANALYST', 'ADMIN'].includes(user.role)) {
         return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
       }
       try {
         const expenses = await prisma.expense.findMany({
           include: { vehicle: true, trip: true },
-          orderBy: { createdAt: 'desc' }
+          orderBy: { createdAt: 'desc' },
         });
         return res.status(200).json(expenses);
       } catch (error: unknown) {
@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ message: 'Internal server error' });
       }
     } else if (req.method === 'POST') {
-      if (!['FINANCIAL_ANALYST'].includes(user.role)) {
+      if (!['FINANCIAL_ANALYST', 'ADMIN'].includes(user.role)) {
         return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
       }
       try {
@@ -34,9 +34,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             amount: Number(data.amount),
             date: new Date(data.date),
             notes: data.notes || null,
-          }
+          },
         });
         return res.status(201).json(newExpense);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         console.error('Expense error:', error);
         return res.status(500).json({ message: error.message || 'Internal server error' });

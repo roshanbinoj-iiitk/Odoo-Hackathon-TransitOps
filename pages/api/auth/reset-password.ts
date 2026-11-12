@@ -1,0 +1,67 @@
+import { NextApiRequest, NextApiResponse } from 'next';
+import { prisma } from '../../../lib/prisma';
+import bcrypt from 'bcrypt';
+import { z } from 'zod';
+import { sendEmail } from '../../../lib/email';
+import crypto from 'crypto';
+
+const resetSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  }
+
+  try {
+    const validation = resetSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ message: validation.error.issues[0].message });
+    }
+
+    const { token, password } = validation.data;
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await prisma.user.findUnique({ where: { resetToken: hashedToken } });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired reset token' });
+    }
+
+    if (user.tokenExpiresAt && user.tokenExpiresAt < new Date()) {
+      return res
+        .status(400)
+        .json({ message: 'Reset token has expired. Please request a new one.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetToken: null,
+        tokenExpiresAt: null,
+      },
+    });
+
+    // Send confirmation email
+    await sendEmail({
+      to: user.email,
+      subject: 'TransitOps Password Reset Successfully',
+      html: `
+        <h1>Password Reset Complete</h1>
+        <p>Hi ${user.name},</p>
+        <p>Your password has been successfully reset.</p>
+        <p>If you did not perform this action, please contact your administrator immediately.</p>
+      `,
+    });
+
+    return res.status(200).json({ message: 'Password reset successfully. You can now log in.' });
+  } catch (error) {
+    console.error('Password reset error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}

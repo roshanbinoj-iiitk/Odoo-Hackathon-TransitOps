@@ -11,32 +11,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'GET') {
-      if (!['FLEET_MANAGER', 'DISPATCHER', 'FINANCIAL_ANALYST'].includes(user.role)) {
+      if (!['FLEET_MANAGER', 'DISPATCHER', 'FINANCIAL_ANALYST', 'ADMIN'].includes(user.role)) {
         return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
       }
       try {
         const vehicle = await prisma.vehicle.findUnique({ where: { id } });
         if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
         return res.status(200).json(vehicle);
+        // eslint-disable-next-line unused-imports/no-unused-vars
       } catch (error) {
         return res.status(500).json({ message: 'Internal server error' });
       }
     } else if (req.method === 'PUT') {
-      if (user.role !== 'FLEET_MANAGER') {
+      if (user.role !== 'FLEET_MANAGER' && user.role !== 'ADMIN') {
         return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
       }
       try {
         const data = req.body;
-        
+
         // Optional registration format validation if updating registration
         if (data.registration) {
           const regRegex = /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/i;
           if (!regRegex.test(data.registration.replace(/\s+/g, ''))) {
             return res.status(400).json({ message: 'Invalid Indian registration number format' });
           }
-          
+
           // Check uniqueness if changing
-          const existing = await prisma.vehicle.findUnique({ where: { registration: data.registration } });
+          const existing = await prisma.vehicle.findUnique({
+            where: { registration: data.registration },
+          });
           if (existing && existing.id !== id) {
             return res.status(400).json({ message: 'Vehicle registration must be unique.' });
           }
@@ -53,39 +56,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             status: data.status,
             mileage: data.mileage !== undefined ? Number(data.mileage) : undefined,
             capacity: data.capacity !== undefined ? Number(data.capacity) : undefined,
-            acquisitionCost: data.acquisitionCost !== undefined ? Number(data.acquisitionCost) : undefined,
+            acquisitionCost:
+              data.acquisitionCost !== undefined ? Number(data.acquisitionCost) : undefined,
             region: data.region,
-          }
+          },
         });
         return res.status(200).json(updatedVehicle);
       } catch (error) {
         console.error('Update vehicle error:', error);
         return res.status(500).json({ message: 'Internal server error' });
       }
-    } else if (req.method === 'DELETE') {
-      if (user.role !== 'FLEET_MANAGER') {
+    } else if (req.method === 'PATCH') {
+      if (user.role !== 'FLEET_MANAGER' && user.role !== 'ADMIN') {
         return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
       }
       try {
-        // Prevent deleting if it has active trips (optional safety measure, but let's try to delete safely)
+        // Prevent archiving if it has active trips
         const activeTrips = await prisma.trip.findFirst({
-          where: { vehicleId: id, status: { in: ['ASSIGNED', 'DISPATCHED'] } }
+          where: { vehicleId: id, status: { in: ['ASSIGNED', 'DISPATCHED'] } },
         });
         if (activeTrips) {
-          return res.status(400).json({ message: 'Cannot delete vehicle with active trips' });
+          return res.status(400).json({ message: 'Cannot archive vehicle with active trips' });
         }
-        
-        // Due to referential integrity, delete related first or use CASCADE.
-        // Assuming no cascade in schema, we'll manually delete trips, maintenance, and fuel logs.
-        await prisma.trip.deleteMany({ where: { vehicleId: id } });
-        await prisma.maintenanceLog.deleteMany({ where: { vehicleId: id } });
-        await prisma.fuelLog.deleteMany({ where: { vehicleId: id } });
-        
-        await prisma.vehicle.delete({ where: { id } });
-        
-        return res.status(200).json({ message: 'Vehicle deleted successfully' });
+
+        await prisma.vehicle.update({
+          where: { id },
+          data: { isArchived: true },
+        });
+
+        return res.status(200).json({ message: 'Vehicle archived successfully' });
       } catch (error) {
-        console.error('Delete vehicle error:', error);
+        console.error('Archive vehicle error:', error);
         return res.status(500).json({ message: 'Internal server error' });
       }
     } else {

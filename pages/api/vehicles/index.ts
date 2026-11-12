@@ -5,19 +5,21 @@ import { requireAuth } from '../../../lib/auth';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   return requireAuth(async (req, res, user) => {
     if (req.method === 'GET') {
-      if (!['FLEET_MANAGER', 'DISPATCHER', 'FINANCIAL_ANALYST'].includes(user.role)) {
+      if (!['FLEET_MANAGER', 'DISPATCHER', 'FINANCIAL_ANALYST', 'ADMIN'].includes(user.role)) {
         return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
       }
       try {
         const vehicles = await prisma.vehicle.findMany({
-          orderBy: { createdAt: 'desc' }
+          where: { isArchived: false },
+          orderBy: { createdAt: 'desc' },
         });
         return res.status(200).json(vehicles);
+        // eslint-disable-next-line unused-imports/no-unused-vars
       } catch (error) {
         return res.status(500).json({ message: 'Internal server error' });
       }
     } else if (req.method === 'POST') {
-      if (user.role !== 'FLEET_MANAGER') {
+      if (user.role !== 'FLEET_MANAGER' && user.role !== 'ADMIN') {
         return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
       }
       try {
@@ -28,11 +30,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(400).json({ message: 'Invalid Indian registration number format' });
         }
 
-        const existing = await prisma.vehicle.findUnique({ where: { registration: data.registration } });
+        const existing = await prisma.vehicle.findUnique({
+          where: { registration: data.registration },
+        });
         if (existing) {
           return res.status(400).json({ message: 'Vehicle registration must be unique.' });
         }
-        
+
         const newVehicle = await prisma.vehicle.create({
           data: {
             registration: data.registration,
@@ -46,9 +50,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             capacity: Number(data.capacity || 0),
             acquisitionCost: Number(data.acquisitionCost || 0),
             region: data.region || 'Maharashtra',
-          }
+          },
         });
         return res.status(201).json(newVehicle);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         console.error('Vehicle creation error:', error);
         return res.status(500).json({ message: error.message || 'Internal server error' });

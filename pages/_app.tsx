@@ -1,23 +1,35 @@
-import "@/styles/globals.css";
-import type { AppProps } from "next/app";
-import { Inter } from "next/font/google";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/sonner";
-import Layout from "@/components/layout/Layout";
+import '@/styles/globals.css';
+import type { AppProps } from 'next/app';
+import { Space_Grotesk } from 'next/font/google';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Toaster } from '@/components/ui/sonner';
+import Layout from '@/components/layout/Layout';
 
-const inter = Inter({ subsets: ["latin"] });
+const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-sans' });
 
-import { ThemeProvider } from "next-themes";
+import { ThemeProvider } from 'next-themes';
 
 export default function App({ Component, pageProps, router }: AppProps) {
-  // Do not use the layout for the login page
-  const isLoginPage = router.pathname === "/login";
+  // Do not use the layout for authentication pages
+  const isAuthPage = ['/login', '/forgot-password', '/reset-password', '/setup-account'].includes(
+    router.pathname
+  );
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <div className={`${inter.className} min-h-screen bg-background font-sans antialiased text-foreground`}>
+    <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
+      <style jsx global>{`
+        :root {
+          --font-sans: ${spaceGrotesk.style.fontFamily};
+        }
+        body {
+          font-family: var(--font-sans), sans-serif;
+        }
+      `}</style>
+      <div
+        className={`${spaceGrotesk.variable} ${spaceGrotesk.className} min-h-screen font-sans antialiased text-foreground`}
+      >
         <TooltipProvider>
-          {isLoginPage ? (
+          {isAuthPage ? (
             <Component {...pageProps} />
           ) : (
             <Layout>

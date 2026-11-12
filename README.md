@@ -1,17 +1,16 @@
 <div align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=2563eb&height=250&section=header&text=TransitOps&fontSize=70&fontColor=ffffff&animation=fadeIn" alt="TransitOps Banner" />
 
-  <h3 align="center">A Modern Fleet & Logistics Management SaaS Platform</h3>
+  <h3 align="center">Enterprise Fleet & Logistics Management Platform</h3>
 
   <p align="center">
-    <strong>Built for the Odoo Hackathon</strong>
-    <br />
-    <br />
     <a href="#overview">Overview</a>
     ·
     <a href="#features">Features</a>
     ·
     <a href="#tech-stack">Tech Stack</a>
+    ·
+    <a href="#ui-showcase">UI Showcase</a>
     ·
     <a href="#system-design">System Design</a>
     ·
@@ -19,53 +18,71 @@
   </p>
 </div>
 
-<br/>
+---
 
 ## Overview
 
-**TransitOps** is a comprehensive, end-to-end Fleet and Logistics Management platform. Built for the Odoo Hackathon, it provides a centralized dashboard to seamlessly manage vehicles, drivers, trips, maintenance, and expenses with built-in Role-Based Access Control (RBAC).
+**TransitOps** is a comprehensive, end-to-end Fleet and Logistics Management platform. It provides a centralized dashboard to seamlessly manage vehicles, drivers, trips, maintenance, and expenses with built-in Role-Based Access Control (RBAC). The platform features a premium, minimalist "Bento Grid" user interface designed for high-density data visualization and operational efficiency.
 
-<br/>
+---
 
 ## Tech Stack
 
 <div align="center">
   <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" />
   <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white" alt="Prisma" />
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
+  <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel" />
+  <img src="https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=JSON%20web%20tokens&logoColor=white" alt="JWT" />
   <img src="https://img.shields.io/badge/Shadcn_UI-000000?style=for-the-badge&logo=shadcnui&logoColor=white" alt="Shadcn UI" />
-  <img src="https://img.shields.io/badge/Framer_Motion-0055FF?style=for-the-badge&logo=framer&logoColor=white" alt="Framer Motion" />
+  <img src="https://img.shields.io/badge/Recharts-000000?style=for-the-badge&logo=react&logoColor=white" alt="Recharts" />
+  <img src="https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white" alt="Vitest" />
+</div>
+<br/>
+<div align="center">
+  <img src="https://github.com/sachhu04/TransitOps/actions/workflows/ci.yml/badge.svg" alt="CI Pipeline Status" />
 </div>
 
-<br/>
+---
 
 ## Features
 
-- **Interactive Dashboard**<br/>
-  High-level KPIs, fleet utilization, active trip tracking, and beautifully rendered charts.
+- **Premium Bento Grid Dashboard:** A high-performance, minimalist interface featuring advanced Recharts data visualizations, SVG linear gradients, and responsive grid layouts for optimal data consumption.
+- **Enterprise Authentication & Invitations:** Secure email invitations with isolated database schemas. Self-serve forgot password flow protected by cryptographic token hashing and strict database-level rate limiting.
+- **Production Email Infrastructure:** Automated server-to-server email dispatch using EmailJS (`@emailjs/nodejs`) to bypass cloud SMTP blocking heuristics and ensure reliable delivery of invitations and password resets.
+- **Fleet Management:** Track vehicle status, health scores, mileage, and maintenance logs in real time.
+- **Driver Management:** Manage driver profiles, licenses, safety scores, and duty availability.
+- **Trip Lifecycle Management:** Dispatch, track, and complete trips with real-time status updates from DRAFT to COMPLETED.
+- **Maintenance & Fuel Logs:** Record maintenance costs, log fuel expenses, and track overall operational efficiency.
+- **Analytics & Reports:** Exportable comprehensive reports (PDF and CSV formats) for fuel efficiency, ROI, and top costliest vehicles.
+- **Role-Based Access Control (RBAC):** Fine-grained permissions for Fleet Managers, Dispatchers, Safety Officers, and Financial Analysts using JWT. Advanced admin capabilities for permanent user deletion and team management.
+- **Production-Grade Testing & CI/CD:** Fully automated Continuous Integration pipeline via GitHub Actions. Features strict ESLint rules, Prettier formatting, TypeScript type-checking, and rapid Unit Testing using Vitest.
 
-- **Fleet Management**<br/>
-  Track vehicle status, health scores, mileage, and maintenance logs in real time.
+---
 
-- **Driver Management**<br/>
-  Manage driver profiles, licenses, safety scores, and duty availability.
+## UI Showcase
 
-- **Trip Lifecycle Management**<br/>
-  Dispatch, track, and complete trips with real-time status updates from `DRAFT` to `COMPLETED`.
+> **Note:** Save your screenshots to a `docs/` folder in this repository, then replace the placeholder links below with the actual paths (e.g., `./docs/login-page.png`).
 
-- **Maintenance & Fuel Logs**<br/>
-  Record maintenance costs, log fuel expenses, and track overall operational efficiency.
+<div align="center">
+  <img src="./docs/login.png" alt="Login Page" width="800"/>
+  <p><em>Secure Authentication & Role-Based Login</em></p>
 
-- **Analytics & Reports**<br/>
-  Exportable comprehensive reports (PDF & CSV) for fuel efficiency, ROI, and top costliest vehicles.
+  <img src="./docs/dashboard.png" alt="Dashboard View" width="800"/>
+  <p><em>Main Operations Dashboard</em></p>
 
-- **Role-Based Access Control (RBAC)**<br/>
-  Fine-grained permissions for Fleet Managers, Dispatchers, Safety Officers, and Financial Analysts using JWT.
+  <img src="./docs/analytics.png" alt="Advanced Analytics" width="800"/>
+  <p><em>Advanced Analytics & Real-Time Reporting</em></p>
 
-<br/>
+  <img src="./docs/team-management.png" alt="Team Management & Invitations" width="800"/>
+  <p><em>Admin Settings & Secure Email Invitations</em></p>
+</div>
+
+---
 
 ## System Design
 
@@ -89,7 +106,7 @@ graph TD
 
 ### Entity Relationship Schema
 
-Our data model is highly relational, connecting vehicles to trips, maintenance, fuel, and expenses, allowing for deep analytics on operational costs.
+The data model is highly relational, connecting vehicles to trips, maintenance, fuel, and expenses, allowing for deep analytics on operational costs. It also strictly isolates authentication lifecycles.
 
 ```mermaid
 erDiagram
@@ -98,17 +115,22 @@ erDiagram
         String email UK
         String name
         Role role
+        String resetToken
+    }
+    Invitation {
+        String id PK
+        String email UK
+        String token UK
+        DateTime expiresAt
     }
     Vehicle {
         String id PK
         String registration UK
-        String type
         VehicleStatus status
         Float healthScore
     }
     Driver {
         String id PK
-        String name
         String licenseNumber UK
         Float safetyScore
         DriverStatus status
@@ -133,25 +155,25 @@ erDiagram
     }
     Expense {
         String id PK
-        String type
+        ExpenseCategory type
         Float amount
     }
 
-    Vehicle ||--o{ Trip : "makes"
-    Driver ||--o{ Trip : "drives"
-    Vehicle ||--o{ MaintenanceLog : "has"
-    Vehicle ||--o{ FuelLog : "has"
-    Vehicle ||--o{ Expense : "incurs"
-    Trip ||--o{ Expense : "incurs"
+    Vehicle ||--o{ Trip : makes
+    Driver ||--o{ Trip : drives
+    Vehicle ||--o{ MaintenanceLog : has
+    Vehicle ||--o{ FuelLog : has
+    Vehicle ||--o{ Expense : incurs
+    Trip ||--o{ Expense : incurs
 ```
 
-<br/>
+---
 
 ## Getting Started
 
 ### Prerequisites
-- **Node.js** (v18 or higher)
-- **PostgreSQL** database
+- Node.js (v20 or higher)
+- PostgreSQL database (or Supabase)
 
 ### 1. Environment Setup
 
@@ -160,10 +182,17 @@ Clone the repository and install dependencies:
 npm install
 ```
 
-Ensure you have a running PostgreSQL instance. Update the `DATABASE_URL` and `JWT_SECRET` in the `.env` file at the root of the project:
+Ensure you have a running PostgreSQL instance. Update the environment variables in the `.env` file at the root of the project:
 ```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/transitops?schema=public"
-JWT_SECRET="supersecret_jwt_key_transitops_hackathon_2026"
+DATABASE_URL="postgresql://postgres:[PASSWORD]@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true"
+DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-ID].supabase.co:5432/postgres"
+JWT_SECRET="supersecret_jwt_key_transitops_2026"
+
+# Email Configuration (EmailJS Server-Side)
+EMAILJS_SERVICE_ID="your_emailjs_service_id"
+EMAILJS_TEMPLATE_ID="your_emailjs_template_id"
+EMAILJS_PUBLIC_KEY="your_emailjs_public_key"
+EMAILJS_PRIVATE_KEY="your_emailjs_private_key"
 ```
 
 ### 2. Database Initialization
@@ -176,9 +205,8 @@ npx prisma db push
 
 Seed the database with default roles, vehicles, and mock data:
 ```bash
-npx prisma db seed
+npm run seed
 ```
-> **Note**: This will automatically populate the database with default users and mock data so you can immediately interact with the dashboard.
 
 ### 3. Default Credentials for Evaluator
 
@@ -186,11 +214,11 @@ You can use the following default credentials to log in and test different RBAC 
 
 | Role | Email | Password |
 | :--- | :--- | :--- |
-| **Admin** | `admin@transitops.in` | `rbss2005@` |
 | **Fleet Manager** | `manager@transitops.in` | `password123` |
 | **Dispatcher** | `dispatcher@transitops.in` | `password123` |
 | **Safety Officer** | `safety@transitops.in` | `password123` |
 | **Financial Analyst** | `finance@transitops.in` | `password123` |
+| **Admin** | `admin@transitops.in` | `password123` |
 
 ### 4. Start Development Server
 
@@ -200,13 +228,25 @@ npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) with your browser to view the application.
 
-<br/>
+### 5. Running Tests & Code Quality Checks
+
+This repository is maintained with a strict CI pipeline. You can run the quality checks locally:
+
+```bash
+# Run the Vitest unit testing suite
+npm run test
+
+# Run the full CI sequence (Format, Lint, Typecheck, Test, Build)
+npm run ci
+```
+
+---
 
 ## API & Backend Documentation
 
 For detailed backend integration notes, API endpoints, and authentication workflows, refer to the [Backend README](./README-BACKEND.md).
 
-<br/>
+---
 
 ## License
 

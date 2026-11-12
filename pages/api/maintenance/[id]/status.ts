@@ -7,7 +7,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method !== 'PATCH') {
       return res.status(405).json({ message: 'Method Not Allowed' });
     }
-    if (user.role !== 'FLEET_MANAGER') {
+    if (user.role !== 'FLEET_MANAGER' && user.role !== 'ADMIN') {
       return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
     }
 
@@ -16,17 +16,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { status } = req.body;
 
       const logId = id as string;
-      const log = await prisma.maintenanceLog.findUnique({ where: { id: logId }, include: { vehicle: true } });
+      const log = await prisma.maintenanceLog.findUnique({
+        where: { id: logId },
+        include: { vehicle: true },
+      });
       if (!log) return res.status(404).json({ message: 'Maintenance log not found' });
 
-      const tx: any[] = [
-        prisma.maintenanceLog.update({ where: { id: logId }, data: { status } })
-      ];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tx: any[] = [prisma.maintenanceLog.update({ where: { id: logId }, data: { status } })];
 
       if (status === 'IN_PROGRESS') {
-        tx.push(prisma.vehicle.update({ where: { id: log.vehicleId }, data: { status: 'IN_SHOP' } }));
+        tx.push(
+          prisma.vehicle.update({ where: { id: log.vehicleId }, data: { status: 'IN_SHOP' } })
+        );
       } else if (status === 'COMPLETED' && log.vehicle.status !== 'RETIRED') {
-        tx.push(prisma.vehicle.update({ where: { id: log.vehicleId }, data: { status: 'AVAILABLE' } }));
+        tx.push(
+          prisma.vehicle.update({ where: { id: log.vehicleId }, data: { status: 'AVAILABLE' } })
+        );
       }
 
       await prisma.$transaction(tx);
