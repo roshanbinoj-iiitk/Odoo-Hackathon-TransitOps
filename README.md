@@ -49,6 +49,18 @@
 
 ---
 
+## Default Credentials
+
+You can use the following default credentials to log in and test different RBAC roles:
+
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| **Fleet Manager** | `manager@transitops.in` | `password123` |
+| **Dispatcher** | `dispatcher@transitops.in` | `password123` |
+| **Safety Officer** | `safety@transitops.in` | `password123` |
+| **Financial Analyst** | `finance@transitops.in` | `password123` |
+| **Admin** | `admin@transitops.in` | `password123` |
+
 ## Features
 
 - **Premium Bento Grid Dashboard:** A high-performance, minimalist interface featuring advanced Recharts data visualizations, SVG linear gradients, and responsive grid layouts for optimal data consumption.
